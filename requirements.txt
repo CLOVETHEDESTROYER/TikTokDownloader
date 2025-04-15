@@ -1,0 +1,3 @@
+yt-dlp>=2023.10.13
+flask>=2.0.0
+# tkinter is included in standard Python library 
