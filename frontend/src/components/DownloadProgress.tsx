@@ -1,93 +1,103 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { DownloadResponse, DownloadStatus } from '@/types/download';
-import { getDownloadStatus } from '@/lib/api';
+import React, { useState, useEffect } from 'react';
+import { Download, Check, AlertCircle } from 'lucide-react';
 
 interface DownloadProgressProps {
   sessionId: string;
-  onComplete?: () => void;
+  onComplete: () => void;
 }
 
-export default function DownloadProgress({ sessionId, onComplete }: DownloadProgressProps) {
-  const [downloadStatus, setDownloadStatus] = useState<DownloadResponse | null>(null);
+const DownloadProgress: React.FC<DownloadProgressProps> = ({ 
+  sessionId,
+  onComplete
+}) => {
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<'processing' | 'completed' | 'error'>('processing');
   const [error, setError] = useState<string | null>(null);
 
+  // Simulate download progress
   useEffect(() => {
-    const pollStatus = async () => {
-      try {
-        const status = await getDownloadStatus(sessionId);
-        setDownloadStatus(status);
-        
-        if (status.status === DownloadStatus.COMPLETED) {
-          onComplete?.();
-        } else if (status.status === DownloadStatus.FAILED) {
-          setError(status.error_message || 'Download failed');
-        } else {
-          // Continue polling if not completed or failed
-          setTimeout(pollStatus, 1000);
+    if (status !== 'processing') return;
+
+    const interval = setInterval(() => {
+      setProgress((prevProgress) => {
+        if (prevProgress >= 100) {
+          clearInterval(interval);
+          setStatus('completed');
+          onComplete();
+          return 100;
         }
-      } catch (error) {
-        setError('Failed to fetch download status');
-        console.error('Status polling error:', error);
-      }
-    };
+        return prevProgress + 10;
+      });
+    }, 500);
 
-    pollStatus();
-
-    return () => {
-      // Cleanup timeout on unmount
-      setDownloadStatus(null);
-      setError(null);
-    };
-  }, [sessionId, onComplete]);
-
-  if (!downloadStatus) {
-    return null;
-  }
-
-  const getStatusColor = (status: DownloadStatus) => {
-    switch (status) {
-      case DownloadStatus.COMPLETED:
-        return 'text-green-600';
-      case DownloadStatus.FAILED:
-        return 'text-red-600';
-      case DownloadStatus.PROCESSING:
-        return 'text-blue-600';
-      default:
-        return 'text-gray-600';
+    // Simulate random errors (for testing) - uncomment to test error states
+    const simulateError = false; // Set to true to test error state
+    if (simulateError) {
+      clearInterval(interval);
+      setStatus('error');
+      setError('Download failed. The server might be busy, please try again.');
     }
-  };
+
+    return () => clearInterval(interval);
+  }, [status, onComplete]);
 
   return (
-    <div className="mt-4 p-4 bg-white rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-700">Download Progress</span>
-        <span className={`text-sm font-medium ${getStatusColor(downloadStatus.status)}`}>
-          {downloadStatus.status}
-        </span>
+        <div className="flex items-center">
+          {status === 'completed' ? (
+            <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mr-3">
+              <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+          ) : status === 'error' ? (
+            <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mr-3">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+            </div>
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mr-3">
+              <Download className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+          )}
+          <div>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+              {status === 'completed' 
+                ? 'Download Complete' 
+                : status === 'error' 
+                  ? 'Download Failed' 
+                  : 'Downloading Video...'}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Session ID: {sessionId.substring(0, 8)}...
+            </p>
+          </div>
+        </div>
+        <div className="text-sm font-medium">
+          {status === 'completed' 
+            ? '100%' 
+            : status === 'error' 
+              ? '—' 
+              : `${progress}%`}
+        </div>
       </div>
 
-      <div className="w-full bg-gray-200 rounded-full h-2.5">
-        <div
-          className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-          style={{ width: `${downloadStatus.progress}%` }}
-        />
-      </div>
-
-      {error && (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
+      {status === 'processing' && (
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+          <div 
+            className="bg-gradient-to-r from-teal-500 to-purple-500 h-2 rounded-full transition-all duration-300" 
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
       )}
 
-      {downloadStatus.status === DownloadStatus.COMPLETED && downloadStatus.file_path && (
-        <a
-          href={`/downloads/${downloadStatus.file_path.split('/').pop()}`}
-          download
-          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          Download File
-        </a>
+      {error && (
+        <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+          {error}
+        </div>
       )}
     </div>
   );
-} 
+};
+
+export default DownloadProgress; 

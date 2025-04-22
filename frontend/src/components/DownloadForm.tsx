@@ -1,110 +1,121 @@
 'use client';
 
-import { useState } from 'react';
-import { Platform, Quality, DownloadRequest } from '@/types/download';
-import { downloadVideo } from '@/lib/api';
-import toast from 'react-hot-toast';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { AlertCircle, Download, ExternalLink, Loader2 } from 'lucide-react';
+import { useDownloads } from '@/context/DownloadsContext';
+import { downloadTikTokVideo, TikTokVideoData } from '@/services/downloadService';
 
 interface DownloadFormProps {
-  onDownloadStart: (sessionId: string) => void;
+  onVideoFetched: (videoData: TikTokVideoData) => void;
 }
 
-export default function DownloadForm({ onDownloadStart }: DownloadFormProps) {
+const DownloadForm: React.FC<DownloadFormProps> = ({ onVideoFetched }) => {
   const [url, setUrl] = useState('');
-  const [platform, setPlatform] = useState<Platform>(Platform.TIKTOK);
-  const [quality, setQuality] = useState<Quality>(Quality.HIGH);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { addDownload } = useDownloads();
+
+  const isValidTikTokUrl = (url: string): boolean => {
+    // Basic validation - can be improved
+    return url.trim() !== '' && 
+      (url.includes('tiktok.com') || 
+       url.includes('vm.tiktok.com') || 
+       url.includes('vt.tiktok.com'));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) {
-      toast.error('Please enter a valid URL');
+    
+    if (!isValidTikTokUrl(url)) {
+      setError('Please enter a valid TikTok URL');
       return;
     }
-
+    
     setIsLoading(true);
+    setError(null);
+    
     try {
-      const request: DownloadRequest = {
-        url: url.trim(),
-        platform,
-        quality,
-      };
-      const response = await downloadVideo(request);
-      onDownloadStart(response.session_id);
-      toast.success('Download started!');
-      setUrl('');
-    } catch (error) {
-      toast.error('Failed to start download. Please try again.');
-      console.error('Download error:', error);
+      // Call the download service
+      const videoData = await downloadTikTokVideo(url);
+      onVideoFetched(videoData);
+      addDownload({
+        id: Date.now().toString(),
+        url,
+        timestamp: new Date().toISOString(),
+        thumbnail: videoData.thumbnail,
+        title: videoData.title
+      });
+    } catch (err) {
+      setError('Failed to process this video. Please try again or try another URL.');
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <div>
-        <label htmlFor="url" className="block text-sm font-medium text-gray-700">
-          Video URL
-        </label>
-        <input
-          type="url"
-          id="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="Enter video URL"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          required
-        />
+    <div className="w-full max-w-3xl mx-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 md:p-8 transition-all duration-300">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Download TikTok Videos Without Watermark
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Paste a TikTok URL to download the video in the highest quality without watermarks.
+        </p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="relative">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://www.tiktok.com/@username/video/1234567890"
+              className="w-full p-4 pr-36 rounded-lg border-2 border-gray-300 dark:border-gray-700 focus:border-teal-500 dark:focus:border-teal-500 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-500 transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              disabled={isLoading}
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+              <button
+                type="submit"
+                disabled={isLoading || !url.trim()}
+                className={`px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 ${
+                  isLoading || !url.trim()
+                    ? 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-teal-500 to-purple-500 hover:from-teal-600 hover:to-purple-600 text-white shadow-md hover:shadow-lg'
+                }`}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Processing</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-5 h-5" />
+                    <span>Download</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+          
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg flex items-start gap-2 text-sm">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+          
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-xs text-gray-500 dark:text-gray-400">
+            <p className="flex items-center">
+              <ExternalLink className="w-4 h-4 mr-2 text-gray-400" />
+              By using our service, you agree to our <Link href="/privacy-policy" className="text-teal-600 dark:text-teal-400 hover:underline ml-1">Terms of Service</Link>.
+            </p>
+          </div>
+        </form>
       </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="platform" className="block text-sm font-medium text-gray-700">
-            Platform
-          </label>
-          <select
-            id="platform"
-            value={platform}
-            onChange={(e) => setPlatform(e.target.value as Platform)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          >
-            {Object.values(Platform).map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="quality" className="block text-sm font-medium text-gray-700">
-            Quality
-          </label>
-          <select
-            id="quality"
-            value={quality}
-            onChange={(e) => setQuality(e.target.value as Quality)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          >
-            {Object.values(Quality).map((q) => (
-              <option key={q} value={q}>
-                {q}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        disabled={isLoading}
-        className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-          isLoading ? 'opacity-50 cursor-not-allowed' : ''
-        }`}
-      >
-        {isLoading ? 'Starting Download...' : 'Download'}
-      </button>
-    </form>
+    </div>
   );
-} 
+};
+
+export default DownloadForm; 

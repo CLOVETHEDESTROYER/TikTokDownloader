@@ -1,0 +1,197 @@
+'use client';
+
+import React, { useState } from 'react';
+import { ExternalLink, FileDown, CheckCircle, Share2, User, Clock } from 'lucide-react';
+
+interface VideoData {
+  id: string;
+  thumbnail: string;
+  title: string;
+  author: string;
+  duration?: number;
+  preview_url?: string;
+  downloadLinks: {
+    quality: string;
+    size: string;
+    url: string;
+  }[];
+  session_id: string;
+}
+
+interface VideoPreviewProps {
+  videoData: VideoData | null;
+}
+
+const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
+  const [selectedQuality, setSelectedQuality] = useState<string | null>(null);
+  const [downloadStarted, setDownloadStarted] = useState(false);
+
+  if (!videoData) return null;
+
+  // Format duration to MM:SS
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return '--:--';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleDownload = (url: string, quality: string) => {
+    setSelectedQuality(quality);
+    setDownloadStarted(true);
+    
+    // In a real app, this would trigger the actual download
+    setTimeout(() => {
+      setDownloadStarted(false);
+      setSelectedQuality(null);
+      // Simulate download by opening the link
+      window.open(url, '_blank');
+    }, 1500);
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: videoData.title,
+        text: `Check out this video: ${videoData.title}`,
+        url: `https://www.tiktok.com/@${videoData.author}/video/${videoData.id}`
+      });
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div className="p-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Video Preview</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Thumbnail */}
+          <div className="md:col-span-1">
+            <div className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 aspect-[9/16]">
+              <img 
+                src={videoData.thumbnail} 
+                alt={videoData.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-3">
+                <p className="text-white text-xs font-medium line-clamp-2">
+                  {videoData.title}
+                </p>
+                <p className="text-gray-300 text-xs mt-1">
+                  @{videoData.author}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Video Details */}
+          <div className="md:col-span-2 flex flex-col">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{videoData.title}</h3>
+            
+            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
+              <User className="w-4 h-4 mr-1" />
+              <span>{videoData.author}</span>
+            </div>
+            
+            {videoData.duration && (
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+                <Clock className="w-4 h-4 mr-1" />
+                <span>{formatDuration(videoData.duration)}</span>
+              </div>
+            )}
+            
+            {/* Download Options */}
+            <div className="mt-4">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                Select Quality:
+              </h4>
+              
+              <div className="space-y-3">
+                {videoData.downloadLinks.map((link) => (
+                  <div 
+                    key={link.quality}
+                    className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between transition-all duration-200 hover:border-teal-500 dark:hover:border-teal-500"
+                  >
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {link.quality} Quality
+                      </span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Approx. size: {link.size}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDownload(link.url, link.quality)}
+                      disabled={downloadStarted}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 ${
+                        downloadStarted
+                          ? selectedQuality === link.quality
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                          : 'bg-teal-100 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-200 dark:hover:bg-teal-900/30'
+                      }`}
+                    >
+                      {downloadStarted && selectedQuality === link.quality ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Downloaded</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileDown className="w-4 h-4" />
+                          <span>Download</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-between items-center">
+              <button
+                onClick={handleShare}
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors flex items-center gap-1"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Share</span>
+              </button>
+              
+              <a 
+                href={`https://www.tiktok.com/@${videoData.author}/video/${videoData.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors flex items-center gap-1"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>View Original</span>
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        {/* Video Preview Player */}
+        {videoData.preview_url && (
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Video Preview</h4>
+            <div className="rounded-lg overflow-hidden bg-black">
+              <video 
+                controls 
+                className="w-full max-h-[500px]"
+                src={videoData.preview_url}
+                poster={videoData.thumbnail}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Ad Banner */}
+        <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-center text-sm text-gray-700 dark:text-gray-300">
+          Ad: Support our free service by viewing this advertisement
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default VideoPreview; 
