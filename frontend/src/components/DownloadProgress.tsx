@@ -24,12 +24,20 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
       setProgress((prevProgress) => {
         if (prevProgress >= 100) {
           clearInterval(interval);
-          setStatus('completed');
-          onComplete();
           return 100;
         }
         return prevProgress + 10;
       });
+      
+      // Check if progress has reached 100 and update status
+      if (progress >= 90) {
+        setStatus('completed');
+        // Call onComplete in the next tick to avoid rendering issues
+        setTimeout(() => {
+          onComplete();
+        }, 0);
+        clearInterval(interval);
+      }
     }, 500);
 
     // Simulate random errors (for testing) - uncomment to test error states
@@ -41,7 +49,7 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
     }
 
     return () => clearInterval(interval);
-  }, [status, onComplete]);
+  }, [status, progress, onComplete]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">

@@ -13,12 +13,18 @@ import { TikTokVideoData } from '@/services/downloadService';
 
 // Define the VideoData interface
 interface VideoData {
+  id: string;
   thumbnail: string;
   title: string;
   author: string;
   duration?: number;
   preview_url?: string;
   download_url: string;
+  downloadLinks?: {
+    quality: string;
+    size: string;
+    url: string;
+  }[];
   session_id: string;
 }
 
@@ -36,12 +42,20 @@ export default function Home() {
     
     // Set the video data for preview
     setVideoData({
+      id: data.id,
       thumbnail: data.thumbnail,
       title: data.title,
       author: data.author,
       duration: data.duration,
       preview_url: data.preview_url,
       download_url: data.download_url,
+      downloadLinks: data.downloadLinks || [
+        {
+          quality: 'High Quality',
+          size: 'Unknown',
+          url: data.download_url
+        }
+      ],
       session_id: data.session_id
     });
     

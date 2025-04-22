@@ -46,9 +46,28 @@ const DownloadForm: React.FC<DownloadFormProps> = ({ onVideoFetched }) => {
         thumbnail: videoData.thumbnail,
         title: videoData.title
       });
-    } catch (err) {
-      setError('Failed to process this video. Please try again or try another URL.');
-      console.error(err);
+    } catch (err: unknown) {
+      // Try to extract more specific error messages
+      let errorMessage = 'Failed to process this video. Please try again or try another URL.';
+      
+      if (err instanceof Error && err.message) {
+        if (err.message.includes('validation')) {
+          errorMessage = 'Invalid URL format. Please make sure you\'re using a correct TikTok video URL.';
+        } else if (err.message.includes('status 403')) {
+          errorMessage = 'This video is private or restricted. Please try another video.';
+        } else if (err.message.includes('status 404')) {
+          errorMessage = 'Video not found. The URL may be incorrect or the video has been removed.';
+        } else if (err.message.includes('status 429')) {
+          errorMessage = 'Too many requests. Please wait a few minutes and try again.';
+        } else if (err.message.includes('status 5')) {
+          errorMessage = 'Server error. Our backend is having issues. Please try again later.';
+        } else {
+          errorMessage = `Error: ${err.message}`;
+        }
+      }
+      
+      setError(errorMessage);
+      console.error('Download error:', err);
     } finally {
       setIsLoading(false);
     }

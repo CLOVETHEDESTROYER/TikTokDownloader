@@ -10,7 +10,8 @@ interface VideoData {
   author: string;
   duration?: number;
   preview_url?: string;
-  downloadLinks: {
+  download_url?: string;
+  downloadLinks?: {
     quality: string;
     size: string;
     url: string;
@@ -107,7 +108,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
               </h4>
               
               <div className="space-y-3">
-                {videoData.downloadLinks.map((link) => (
+                {(videoData.downloadLinks || []).map((link) => (
                   <div 
                     key={link.quality}
                     className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between transition-all duration-200 hover:border-teal-500 dark:hover:border-teal-500"
