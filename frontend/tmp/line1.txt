@@ -1,0 +1,1 @@
+// Default thumbnail URL to use if the API does not provide one or if loading fails

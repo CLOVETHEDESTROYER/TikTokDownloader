@@ -1,0 +1,1 @@
+const DEFAULT_THUMBNAIL = 'https://placehold.co/600x800/9b5cf6/ffffff?text=TikTok+Thumbnail';

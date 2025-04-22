@@ -47,6 +47,11 @@ class DownloadResponse(BaseModel):
     filename: Optional[str] = None
     error: Optional[str] = None
     expires_at: Optional[float] = None
+    # Video metadata
+    title: Optional[str] = None
+    author: Optional[str] = None
+    duration: Optional[float] = None
+    thumbnail: Optional[str] = None
 
 
 class BatchDownloadRequest(BaseModel):

@@ -6,12 +6,16 @@ import { AlertCircle, Download, ExternalLink, Loader2 } from 'lucide-react';
 import { useDownloads } from '@/context/DownloadsContext';
 import { downloadTikTokVideo, TikTokVideoData } from '@/services/downloadService';
 
+// Define quality options
+type QualityOption = 'HIGH' | 'MEDIUM' | 'LOW';
+
 interface DownloadFormProps {
   onVideoFetched: (videoData: TikTokVideoData) => void;
 }
 
 const DownloadForm: React.FC<DownloadFormProps> = ({ onVideoFetched }) => {
   const [url, setUrl] = useState('');
+  const [quality, setQuality] = useState<QualityOption>('HIGH');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { addDownload } = useDownloads();
@@ -36,8 +40,8 @@ const DownloadForm: React.FC<DownloadFormProps> = ({ onVideoFetched }) => {
     setError(null);
     
     try {
-      // Call the download service
-      const videoData = await downloadTikTokVideo(url);
+      // Call the download service with the selected quality
+      const videoData = await downloadTikTokVideo(url, quality);
       onVideoFetched(videoData);
       addDownload({
         id: Date.now().toString(),
@@ -80,7 +84,7 @@ const DownloadForm: React.FC<DownloadFormProps> = ({ onVideoFetched }) => {
           Download TikTok Videos Without Watermark
         </h2>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Paste a TikTok URL to download the video in the highest quality without watermarks.
+          Paste a TikTok URL to download the video in your preferred quality without watermarks.
         </p>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -118,6 +122,29 @@ const DownloadForm: React.FC<DownloadFormProps> = ({ onVideoFetched }) => {
             </div>
           </div>
           
+          {/* Quality Selection */}
+          <div className="flex flex-col md:flex-row gap-3 md:items-center my-4">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Video Quality:
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {(['HIGH', 'MEDIUM', 'LOW'] as const).map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => setQuality(q)}
+                  className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                    quality === q
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {q === 'HIGH' ? 'High (1080p)' : q === 'MEDIUM' ? 'Medium (720p)' : 'Low (480p)'}
+                </button>
+              ))}
+            </div>
+          </div>
+          
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg flex items-start gap-2 text-sm">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -126,6 +153,9 @@ const DownloadForm: React.FC<DownloadFormProps> = ({ onVideoFetched }) => {
           )}
           
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-xs text-gray-500 dark:text-gray-400">
+            <div className="mb-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span className="font-semibold">Free Plan:</span> 5 downloads per 30 minutes. <Link href="/premium" className="text-teal-600 dark:text-teal-400 hover:underline">Upgrade to Premium</Link> for unlimited downloads.
+            </div>
             <p className="flex items-center">
               <ExternalLink className="w-4 h-4 mr-2 text-gray-400" />
               By using our service, you agree to our <Link href="/privacy-policy" className="text-teal-600 dark:text-teal-400 hover:underline ml-1">Terms of Service</Link>.

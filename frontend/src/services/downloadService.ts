@@ -17,9 +17,13 @@ export interface TikTokVideoData {
 /**
  * Downloads a TikTok video by calling the backend API
  * @param url TikTok video URL
+ * @param quality Video quality (HIGH, MEDIUM, LOW)
  * @returns Promise with video data
  */
-export const downloadTikTokVideo = async (url: string): Promise<TikTokVideoData> => {
+export const downloadTikTokVideo = async (
+  url: string, 
+  quality: 'HIGH' | 'MEDIUM' | 'LOW' = 'HIGH'
+): Promise<TikTokVideoData> => {
   try {
     // Call the Next.js API route which proxies to the backend
     const apiUrl = '/api/v1/download';
@@ -35,7 +39,7 @@ export const downloadTikTokVideo = async (url: string): Promise<TikTokVideoData>
       body: JSON.stringify({ 
         url: url.trim(),
         platform: 'tiktok',
-        quality: 'high'
+        quality: quality.toLowerCase()
       }),
     });
     
@@ -66,6 +70,19 @@ export const downloadTikTokVideo = async (url: string): Promise<TikTokVideoData>
         throw new Error('The request was rejected due to validation errors. Please check your URL and try again.');
       }
       
+      // Handle rate limiting specifically
+      if (response.status === 429) {
+        console.error('Rate limit exceeded:', data);
+        
+        // Check if this is a download limit error
+        if (data.detail && typeof data.detail === 'object' && data.detail.error && data.detail.error.includes('Download limit reached')) {
+          throw new Error(`Download limit reached. You can download 5 videos per 30 minutes with the free plan. Upgrade to Premium for more downloads.`);
+        }
+        
+        // General rate limiting error
+        throw new Error(`Rate limit exceeded. Please try again in ${data.detail?.retry_after_seconds || 'a few minutes'}.`);
+      }
+      
       throw new Error(data.detail || `Backend returned status ${response.status}`);
     }
     
@@ -84,7 +101,7 @@ export const downloadTikTokVideo = async (url: string): Promise<TikTokVideoData>
       // Create downloadLinks array if it doesn't exist
       downloadLinks: data.downloadLinks || [
         {
-          quality: 'High Quality',
+          quality: quality,
           size: 'Unknown',
           url: data.download_url || data.file_path || '#'
         }

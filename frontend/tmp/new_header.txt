@@ -1,0 +1,9 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import {
+  ExternalLink,
+  FileDown,
+  CheckCircle,
+// Default thumbnail URL to use if the API does not provide one or if loading fails
+const DEFAULT_THUMBNAIL = 'https://placehold.co/600x800/9b5cf6/ffffff?text=TikTok+Thumbnail';

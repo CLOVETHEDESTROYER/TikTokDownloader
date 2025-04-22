@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, FileDown, CheckCircle, Share2, User, Clock, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
 import ExpirationCountdown from './ExpirationCountdown';
-import { downloadVideo } from '../utils/api';
+import { downloadVideoWithProgress } from '../utils/api';
 
 interface VideoData {
   id: string;
@@ -12,14 +13,14 @@ interface VideoData {
   author: string;
   duration?: number;
   preview_url?: string;
-  download_url?: string;
+  download_url: string;
   downloadLinks?: {
     quality: string;
     size: string;
     url: string;
   }[];
   session_id: string;
-  status: string;
+  status?: string;
   expires_at?: number;
   filename?: string;
 }
@@ -69,8 +70,11 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
     setError(null);
     
     try {
-      // Use the new API client to download the file
-      const blob = await downloadVideo(videoData.session_id);
+      // Use the downloadVideoWithProgress to track progress
+      const blob = await downloadVideoWithProgress(
+        videoData.session_id,
+        (progress) => setDownloadProgress(progress)
+      );
       
       // Create a URL for the blob
       const downloadUrl = window.URL.createObjectURL(blob);
@@ -93,12 +97,11 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
       // Clean up the URL
       window.URL.revokeObjectURL(downloadUrl);
       
-      // Update UI
-      setDownloadProgress(100);
+      // Update UI - don't reset immediately to show 100% progress
       setTimeout(() => {
         setDownloadStarted(false);
         setSelectedQuality(null);
-      }, 1000);
+      }, 1500);
     } catch (error) {
       console.error('Download failed:', error);
       setError(error instanceof Error ? error.message : 'Failed to download the video. Please try again.');
@@ -143,18 +146,49 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
           {/* Thumbnail */}
           <div className="md:col-span-1">
             <div className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 aspect-[9/16]">
-              <img 
-                src={videoData.thumbnail} 
-                alt={videoData.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-3">
-                <p className="text-white text-xs font-medium line-clamp-2">
+              <div className="relative w-full h-full">
+                {videoData.thumbnail ? (
+                  <div className="w-full h-full">
+                    {/* Using unoptimized prop for external images that aren't in the config */}
+                    <Image 
+                      src={videoData.thumbnail}
+                      alt={videoData.title}
+                      className="w-full h-full object-cover"
+                      width={400}
+                      height={600}
+                      unoptimized
+                      onError={(e) => {
+                        // Set a transparent SVG as fallback to avoid further errors
+                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='50' font-family='sans-serif' font-size='10' text-anchor='middle' alignment-baseline='middle' fill='%23a1a1aa'%3ENo Image%3C/text%3E%3C/svg%3E";
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-800">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">No thumbnail available</p>
+                  </div>
+                )}
+              </div>
+              {/* Platform badge */}
+              <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full z-10">
+                {videoData.id?.includes('youtube') ? 'YouTube' : 
+                 videoData.id?.includes('instagram') ? 'Instagram' : 'TikTok'}
+              </div>
+              {/* Duration badge - if available */}
+              {videoData.duration && (
+                <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full z-10">
+                  {formatDuration(videoData.duration)}
+                </div>
+              )}
+              {/* Gradient overlay and title */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-3 z-10">
+                <p className="text-white text-sm font-semibold line-clamp-2 mb-0.5">
                   {videoData.title}
                 </p>
-                <p className="text-gray-300 text-xs mt-1">
-                  @{videoData.author}
-                </p>
+                <div className="flex items-center text-gray-300 text-xs mt-1">
+                  <User className="w-3 h-3 mr-1" />
+                  <span>@{videoData.author}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -263,21 +297,6 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
             </div>
           </div>
         </div>
-        
-        {/* Video Preview Player */}
-        {videoData.preview_url && (
-          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Video Preview</h4>
-            <div className="rounded-lg overflow-hidden bg-black">
-              <video 
-                controls 
-                className="w-full max-h-[500px]"
-                src={videoData.preview_url}
-                poster={videoData.thumbnail}
-              />
-            </div>
-          </div>
-        )}
         
         {/* Ad Banner */}
         <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-center text-sm text-gray-700 dark:text-gray-300">

@@ -98,4 +98,90 @@ export const createDownload = async (
   }
 
   return response.json();
+};
+
+/**
+ * Download a video file with progress tracking
+ * @param sessionId The session ID of the download
+ * @param onProgress Optional callback for progress updates (0-100)
+ * @returns A Promise resolving to a Blob containing the video data
+ */
+export const downloadVideoWithProgress = async (
+  sessionId: string, 
+  onProgress?: (progress: number) => void
+): Promise<Blob> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Use the Next.js API route for file downloads
+      const response = await fetch(`${FRONTEND_API_BASE_URL}/file/${sessionId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'video/mp4',
+        },
+      });
+
+      if (!response.ok) {
+        // Try to parse error details if available
+        try {
+          const error = await response.json();
+          reject(new Error(error.detail || `Download failed with status ${response.status}`));
+        } catch {
+          reject(new Error(`Download failed with status ${response.status}`));
+        }
+        return;
+      }
+
+      // Read the body as a stream
+      const reader = response.body?.getReader();
+      if (!reader) {
+        reject(new Error('Unable to read response body'));
+        return;
+      }
+
+      // Get content length from headers if available
+      const contentLength = Number(response.headers.get('Content-Length')) || 0;
+      
+      // Create array to store chunks
+      const chunks: Uint8Array[] = [];
+      let receivedLength = 0;
+
+      // Process stream
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          break;
+        }
+        
+        chunks.push(value);
+        receivedLength += value.length;
+        
+        // Report progress if callback provided and content length is known
+        if (onProgress && contentLength > 0) {
+          const progress = Math.min(Math.round((receivedLength / contentLength) * 100), 100);
+          onProgress(progress);
+        }
+      }
+      
+      // Report 100% progress when done
+      if (onProgress) {
+        onProgress(100);
+      }
+      
+      // Concatenate chunks into a single Uint8Array
+      const allChunks = new Uint8Array(receivedLength);
+      let position = 0;
+      for (const chunk of chunks) {
+        allChunks.set(chunk, position);
+        position += chunk.length;
+      }
+      
+      // Convert to blob and resolve
+      const blob = new Blob([allChunks], { type: response.headers.get('Content-Type') || 'video/mp4' });
+      resolve(blob);
+      
+    } catch (error) {
+      reject(error);
+    }
+  });
 }; 

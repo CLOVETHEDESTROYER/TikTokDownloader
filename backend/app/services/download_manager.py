@@ -27,9 +27,14 @@ class DownloadManager:
         self.executor = ThreadPoolExecutor(
             max_workers=5)  # Limit concurrent downloads
         self.file_expiry_seconds = 300  # 5 minutes
+        self.cleanup_task = None
         os.makedirs(self.download_folder, exist_ok=True)
-        # Start the cleanup task
-        asyncio.create_task(self._cleanup_loop())
+
+    async def start_cleanup_task(self):
+        """Start the cleanup task if it's not already running."""
+        if self.cleanup_task is None or self.cleanup_task.done():
+            self.cleanup_task = asyncio.create_task(self._cleanup_loop())
+        return self.cleanup_task
 
     async def _cleanup_loop(self):
         """Background task to clean up expired files."""
@@ -100,11 +105,16 @@ class DownloadManager:
     async def _extract_video_info(self, url: str, ydl_opts: dict) -> dict:
         """Extract video information asynchronously"""
         try:
+            # Modify options to extract thumbnails without downloading
+            info_opts = ydl_opts.copy()
+            info_opts['extract_flat'] = False
+            info_opts['skip_download'] = True
+
             loop = asyncio.get_event_loop()
             return await loop.run_in_executor(
                 self.executor,
                 lambda: yt_dlp.YoutubeDL(
-                    ydl_opts).extract_info(url, download=False)
+                    info_opts).extract_info(url, download=False)
             )
         except yt_dlp.utils.DownloadError as e:
             if "Video unavailable" in str(e):
@@ -161,6 +171,32 @@ class DownloadManager:
             if not info:
                 raise VideoNotFoundError(url)
 
+            # Extract video metadata
+            title = info.get('title', 'Untitled Video')
+            author = info.get('uploader', info.get(
+                'channel', 'Unknown Creator'))
+            duration = info.get('duration')
+
+            # Extract the best thumbnail URL
+            thumbnail = None
+            if info.get('thumbnails'):
+                thumbnails = sorted(
+                    [t for t in info.get('thumbnails', []) if t.get('url')],
+                    key=lambda t: t.get('preference', 0) +
+                    t.get('width', 0)/100,
+                    reverse=True
+                )
+                if thumbnails:
+                    thumbnail = thumbnails[0]['url']
+
+            # Save metadata to active_downloads
+            self.active_downloads[session_id].update({
+                "title": title,
+                "author": author,
+                "duration": duration,
+                "thumbnail": thumbnail
+            })
+
             # Check if requested quality is available
             formats = info.get('formats', [])
             if not any(f for f in formats if self._matches_quality(f, quality)):
@@ -177,13 +213,18 @@ class DownloadManager:
                 "expires_at": time.time() + self.file_expiry_seconds
             })
 
+            # Prepare download response with additional metadata
             return DownloadResponse(
                 session_id=session_id,
                 status=DownloadStatus.COMPLETED,
                 progress=100,
                 url=url,
                 filename=filename,
-                expires_at=self.active_downloads[session_id]["expires_at"]
+                expires_at=self.active_downloads[session_id]["expires_at"],
+                title=title,
+                author=author,
+                duration=duration,
+                thumbnail=thumbnail
             )
 
         except Exception as e:
@@ -214,7 +255,11 @@ class DownloadManager:
             url=download["url"],
             filename=download.get("filename"),
             error=download.get("error"),
-            expires_at=download.get("expires_at")
+            expires_at=download.get("expires_at"),
+            title=download.get("title"),
+            author=download.get("author"),
+            duration=download.get("duration"),
+            thumbnail=download.get("thumbnail")
         )
 
     async def process_batch_download(

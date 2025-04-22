@@ -41,6 +41,24 @@ async def check_rate_limit(
         )
 
 
+async def check_download_limit(
+    request: Request,
+    ip_and_tier: Tuple[str, UserTier] = Depends(get_user_ip_and_tier)
+) -> None:
+    """Check if the user has exceeded their download limit."""
+    ip, tier = ip_and_tier
+    is_limited, retry_after = rate_limiter.check_download_limit(ip, tier)
+
+    if is_limited:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "Download limit reached. Upgrade to Premium for more downloads. Try again in 30 minutes.",
+                "retry_after_seconds": retry_after
+            }
+        )
+
+
 async def check_bulk_download_limit(
     request: Request,
     ip_and_tier: Tuple[str, UserTier] = Depends(get_user_ip_and_tier)
