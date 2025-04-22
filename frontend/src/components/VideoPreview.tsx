@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ExternalLink, FileDown, CheckCircle, Share2, User, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ExternalLink, FileDown, CheckCircle, Share2, User, Clock, AlertCircle } from 'lucide-react';
+import ExpirationCountdown from './ExpirationCountdown';
+import { downloadVideo } from '../utils/api';
 
 interface VideoData {
   id: string;
@@ -17,6 +19,9 @@ interface VideoData {
     url: string;
   }[];
   session_id: string;
+  status: string;
+  expires_at?: number;
+  filename?: string;
 }
 
 interface VideoPreviewProps {
@@ -26,8 +31,23 @@ interface VideoPreviewProps {
 const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
   const [selectedQuality, setSelectedQuality] = useState<string | null>(null);
   const [downloadStarted, setDownloadStarted] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  // Check for expiration when component mounts or data changes
+  useEffect(() => {
+    if (videoData?.status === 'expired') {
+      setIsExpired(true);
+    }
+  }, [videoData?.status]);
 
   if (!videoData) return null;
+
+  const handleExpired = () => {
+    setIsExpired(true);
+    setError('This download has expired. Please request a new download.');
+  };
 
   // Format duration to MM:SS
   const formatDuration = (seconds?: number) => {
@@ -37,17 +57,54 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleDownload = (url: string, quality: string) => {
+  const handleDownload = async (url: string, quality: string) => {
+    if (isExpired) {
+      alert('This download has expired. Please request a new download.');
+      return;
+    }
+
     setSelectedQuality(quality);
     setDownloadStarted(true);
+    setDownloadProgress(0);
+    setError(null);
     
-    // In a real app, this would trigger the actual download
-    setTimeout(() => {
+    try {
+      // Use the new API client to download the file
+      const blob = await downloadVideo(videoData.session_id);
+      
+      // Create a URL for the blob
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      // Set filename - prefer filename from server, fallback to video title
+      const filename = videoData.filename || 
+                      `${videoData.title || 'video'}_${videoData.session_id.substring(0, 8)}.mp4`;
+      
+      link.download = filename;
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      // Update UI
+      setDownloadProgress(100);
+      setTimeout(() => {
+        setDownloadStarted(false);
+        setSelectedQuality(null);
+      }, 1000);
+    } catch (error) {
+      console.error('Download failed:', error);
+      setError(error instanceof Error ? error.message : 'Failed to download the video. Please try again.');
       setDownloadStarted(false);
       setSelectedQuality(null);
-      // Simulate download by opening the link
-      window.open(url, '_blank');
-    }, 1500);
+    }
   };
 
   const handleShare = () => {
@@ -63,7 +120,24 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
       <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Video Preview</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Video Preview</h2>
+          {videoData.expires_at && (
+            <ExpirationCountdown 
+              expiresAt={videoData.expires_at}
+              onExpired={handleExpired}
+              isAlreadyExpired={videoData.status === 'expired' || isExpired}
+            />
+          )}
+        </div>
+        
+        {/* Show error message if present */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4 text-red-600 dark:text-red-400 flex items-start">
+            <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Thumbnail */}
@@ -107,46 +181,65 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
                 Select Quality:
               </h4>
               
-              <div className="space-y-3">
-                {(videoData.downloadLinks || []).map((link) => (
-                  <div 
-                    key={link.quality}
-                    className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between transition-all duration-200 hover:border-teal-500 dark:hover:border-teal-500"
-                  >
-                    <div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {link.quality} Quality
-                      </span>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Approx. size: {link.size}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDownload(link.url, link.quality)}
-                      disabled={downloadStarted}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 ${
-                        downloadStarted
-                          ? selectedQuality === link.quality
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                          : 'bg-teal-100 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-200 dark:hover:bg-teal-900/30'
-                      }`}
+              {isExpired ? (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400">
+                  This download has expired. Please request a new download.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(videoData.downloadLinks || [
+                    // If no download links provided, create a default option
+                    {
+                      quality: 'Original',
+                      size: 'Unknown',
+                      url: '' // We'll use session_id instead
+                    }
+                  ]).map((link) => (
+                    <div 
+                      key={link.quality}
+                      className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between transition-all duration-200 hover:border-teal-500 dark:hover:border-teal-500"
                     >
-                      {downloadStarted && selectedQuality === link.quality ? (
-                        <>
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Downloaded</span>
-                        </>
-                      ) : (
-                        <>
-                          <FileDown className="w-4 h-4" />
-                          <span>Download</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {link.quality} Quality
+                        </span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Approx. size: {link.size}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDownload(link.url, link.quality)}
+                        disabled={downloadStarted}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 ${
+                          downloadStarted
+                            ? selectedQuality === link.quality
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                            : 'bg-teal-100 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-200 dark:hover:bg-teal-900/30'
+                        }`}
+                      >
+                        {downloadStarted && selectedQuality === link.quality ? (
+                          <>
+                            {downloadProgress < 100 ? (
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-1" />
+                            ) : (
+                              <CheckCircle className="w-4 h-4" />
+                            )}
+                            <span>
+                              {downloadProgress < 100 ? 'Downloading...' : 'Download Complete'}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <FileDown className="w-4 h-4" />
+                            <span>Download</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             
             <div className="mt-6 flex justify-between items-center">

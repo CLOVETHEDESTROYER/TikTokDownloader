@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { API_BASE_URL } from '../../../../utils/api';
 
-export const POST = async (req: NextRequest) => {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
+    // Get request body
+    const body = await request.json();
     
-    // Forward the request to your backend API
-    const backendUrl = 'http://localhost:8000/api/v1/download';
-    
-    // Log the request being sent to the backend
-    console.log('Forwarding request to backend:', body);
+    // Forward the request to the backend API
+    const backendUrl = `${API_BASE_URL}/download`;
     
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -17,64 +16,31 @@ export const POST = async (req: NextRequest) => {
       },
       body: JSON.stringify(body),
     });
-
-    // Log response status
-    console.log(`Backend response status: ${response.status}`);
     
-    // Get response body as text first
-    const responseText = await response.text();
-    console.log('Raw response:', responseText);
-    
-    // Try to parse JSON
+    // Get response data
+    const contentType = response.headers.get('Content-Type') || '';
     let data;
-    try {
-      // Only try to parse if there's content
-      data = responseText ? JSON.parse(responseText) : {};
-    } catch (jsonError) {
-      console.error('Error parsing JSON response:', jsonError);
-      return NextResponse.json(
-        { 
-          error: 'Invalid response from server', 
-          detail: 'The server returned an invalid JSON response' 
-        },
-        { status: 500 }
-      );
+    
+    if (contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = { message: await response.text() };
     }
     
-    // For 422 errors, return the validation errors from FastAPI
-    if (response.status === 422) {
-      console.error('Validation error from backend:', data);
-      return NextResponse.json(
-        { 
-          error: 'Validation error', 
-          detail: data.detail || 'The request was rejected due to validation errors',
-          validation_errors: data.detail
-        },
-        { status: 422 }
-      );
-    }
-
+    // If the backend returns an error, pass it through
     if (!response.ok) {
-      console.error('Error response from backend:', data);
-      return NextResponse.json(
-        { 
-          error: 'Backend error', 
-          detail: data.detail || `Backend returned status ${response.status}`
-        },
-        { status: response.status }
-      );
+      return NextResponse.json(data, { status: response.status });
     }
     
-    // Log successful response for debugging
-    console.log('Received response from backend:', data);
-    
+    // Return the data
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error in download API route:', error);
+    console.error('Error proxying download request:', error);
+    
     return NextResponse.json(
       { 
-        error: 'Failed to process download request', 
-        detail: error instanceof Error ? error.message : 'Unknown error' 
+        error: 'Failed to create download',
+        detail: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

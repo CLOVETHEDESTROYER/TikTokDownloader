@@ -36,6 +36,7 @@ class DownloadStatus(str, Enum):
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+    EXPIRED = "expired"
 
 
 class DownloadResponse(BaseModel):
@@ -45,6 +46,7 @@ class DownloadResponse(BaseModel):
     url: HttpUrl
     filename: Optional[str] = None
     error: Optional[str] = None
+    expires_at: Optional[float] = None
 
 
 class BatchDownloadRequest(BaseModel):
@@ -70,3 +72,4 @@ class BatchDownloadResponse(BaseModel):
     processed_urls: int = 0
     status: DownloadStatus
     progress: int = 0
+    expires_at: Optional[float] = None

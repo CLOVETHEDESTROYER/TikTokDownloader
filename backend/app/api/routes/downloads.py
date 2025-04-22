@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, WebSocket, Depends, BackgroundTasks, Request
+from fastapi.responses import FileResponse
 from ...models.download import (
     DownloadRequest,
     DownloadResponse,
@@ -9,6 +10,7 @@ from ...models.download import (
 from ...services.download_manager import DownloadManager
 from ..dependencies import check_rate_limit, check_bulk_download_limit, get_quota
 import asyncio
+import os
 
 router = APIRouter()
 download_manager = DownloadManager()
@@ -124,3 +126,69 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     except Exception as e:
         print(f"WebSocket error: {str(e)}")
         await websocket.close(code=1000)
+
+
+@router.get("/file/{session_id}")
+async def download_file(
+    session_id: str,
+    _: None = Depends(check_rate_limit)
+):
+    """Download a video file directly."""
+    try:
+        # Get the download status
+        status = await download_manager.get_download_status(session_id)
+        if status is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Download session not found"
+            )
+
+        # Check if the download is completed
+        if status.status != DownloadStatus.COMPLETED:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Download is not ready. Current status: {status.status}"
+            )
+
+        # Check if the file has expired
+        if status.status == DownloadStatus.EXPIRED:
+            raise HTTPException(
+                status_code=410,
+                detail="Download has expired. Please request a new download."
+            )
+
+        # Check if we have a filename
+        if not status.filename:
+            raise HTTPException(
+                status_code=404,
+                detail="File not found"
+            )
+
+        file_path = os.path.join(
+            download_manager.download_folder, status.filename)
+
+        # Check if file exists
+        if not os.path.exists(file_path):
+            raise HTTPException(
+                status_code=404,
+                detail="File not found on server"
+            )
+
+        # Return the file with appropriate headers for download
+        return FileResponse(
+            path=file_path,
+            filename=status.filename,
+            media_type="video/mp4",
+            headers={
+                "Content-Disposition": f'attachment; filename="{status.filename}"'
+            }
+        )
+
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error downloading file: {str(e)}"
+        )

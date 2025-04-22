@@ -2,6 +2,7 @@ import os
 import yt_dlp
 import uuid
 import asyncio
+import time
 from typing import Dict, Optional, List, Any
 from concurrent.futures import ThreadPoolExecutor
 from ..core.exceptions import (
@@ -25,7 +26,45 @@ class DownloadManager:
         self.download_folder = "downloads"
         self.executor = ThreadPoolExecutor(
             max_workers=5)  # Limit concurrent downloads
+        self.file_expiry_seconds = 300  # 5 minutes
         os.makedirs(self.download_folder, exist_ok=True)
+        # Start the cleanup task
+        asyncio.create_task(self._cleanup_loop())
+
+    async def _cleanup_loop(self):
+        """Background task to clean up expired files."""
+        while True:
+            try:
+                current_time = time.time()
+                # Check all active downloads
+                for session_id, download in list(self.active_downloads.items()):
+                    if (
+                        download.get("status") == DownloadStatus.COMPLETED
+                        and download.get("created_at")
+                        and current_time - download["created_at"] >= self.file_expiry_seconds
+                    ):
+                        await self._cleanup_download(session_id)
+
+                # Sleep for 30 seconds before next check
+                await asyncio.sleep(30)
+            except Exception as e:
+                print(f"Error in cleanup loop: {str(e)}")
+                await asyncio.sleep(30)  # Sleep even if there's an error
+
+    async def _cleanup_download(self, session_id: str):
+        """Clean up a specific download."""
+        try:
+            download = self.active_downloads.get(session_id)
+            if download and download.get("filename"):
+                file_path = os.path.join(
+                    self.download_folder, download["filename"])
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                # Update status to indicate file is no longer available
+                download["status"] = DownloadStatus.EXPIRED
+                download["file_expired"] = True
+        except Exception as e:
+            print(f"Error cleaning up download {session_id}: {str(e)}")
 
     def _get_ydl_opts(self, platform: Platform, quality: VideoQuality, filename: str) -> dict:
         format_opts = {
@@ -53,7 +92,8 @@ class DownloadManager:
             "progress": 0,
             "url": url,
             "platform": platform,
-            "error": None
+            "error": None,
+            "created_at": None  # Will be set when download completes
         }
         return session_id
 
@@ -129,15 +169,21 @@ class DownloadManager:
             # Download the video
             await self._download_video_async(url, ydl_opts, session_id)
 
-            self.active_downloads[session_id]["status"] = DownloadStatus.COMPLETED
-            self.active_downloads[session_id]["filename"] = filename
+            # Set completion status and timestamp
+            self.active_downloads[session_id].update({
+                "status": DownloadStatus.COMPLETED,
+                "filename": filename,
+                "created_at": time.time(),
+                "expires_at": time.time() + self.file_expiry_seconds
+            })
 
             return DownloadResponse(
                 session_id=session_id,
                 status=DownloadStatus.COMPLETED,
                 progress=100,
                 url=url,
-                filename=filename
+                filename=filename,
+                expires_at=self.active_downloads[session_id]["expires_at"]
             )
 
         except Exception as e:
@@ -167,7 +213,8 @@ class DownloadManager:
             progress=download["progress"],
             url=download["url"],
             filename=download.get("filename"),
-            error=download.get("error")
+            error=download.get("error"),
+            expires_at=download.get("expires_at")
         )
 
     async def process_batch_download(

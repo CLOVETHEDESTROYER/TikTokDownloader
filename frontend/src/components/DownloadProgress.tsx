@@ -2,19 +2,27 @@
 
 import React, { useState, useEffect } from 'react';
 import { Download, Check, AlertCircle } from 'lucide-react';
+import ExpirationCountdown from './ExpirationCountdown';
 
 interface DownloadProgressProps {
   sessionId: string;
   onComplete: () => void;
+  expiresAt?: number;
 }
 
 const DownloadProgress: React.FC<DownloadProgressProps> = ({ 
   sessionId,
-  onComplete
+  onComplete,
+  expiresAt
 }) => {
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState<'processing' | 'completed' | 'error'>('processing');
+  const [status, setStatus] = useState<'processing' | 'completed' | 'error' | 'expired'>('processing');
   const [error, setError] = useState<string | null>(null);
+
+  const handleExpired = () => {
+    setStatus('expired');
+    setError('Download link has expired. Please request a new download.');
+  };
 
   // Simulate download progress
   useEffect(() => {
@@ -59,7 +67,7 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
             <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mr-3">
               <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
-          ) : status === 'error' ? (
+          ) : status === 'error' || status === 'expired' ? (
             <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mr-3">
               <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
@@ -73,8 +81,10 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
               {status === 'completed' 
                 ? 'Download Complete' 
                 : status === 'error' 
-                  ? 'Download Failed' 
-                  : 'Downloading Video...'}
+                  ? 'Download Failed'
+                  : status === 'expired'
+                    ? 'Download Expired'
+                    : 'Downloading Video...'}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Session ID: {sessionId.substring(0, 8)}...
@@ -82,11 +92,16 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
           </div>
         </div>
         <div className="text-sm font-medium">
-          {status === 'completed' 
-            ? '100%' 
-            : status === 'error' 
-              ? '—' 
-              : `${progress}%`}
+          {status === 'completed' && expiresAt ? (
+            <ExpirationCountdown 
+              expiresAt={expiresAt}
+              onExpired={handleExpired}
+            />
+          ) : status === 'completed' 
+              ? '100%' 
+              : status === 'error' || status === 'expired'
+                ? '—' 
+                : `${progress}%`}
         </div>
       </div>
 

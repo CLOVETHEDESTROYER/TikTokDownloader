@@ -7,6 +7,7 @@ import os
 import uuid
 from .api.routes import downloads
 from .core.error_handlers import setup_error_handlers
+from . import routes_test
 
 app = FastAPI(
     title="Social Media Downloader API",
@@ -54,6 +55,9 @@ async def health_check():
 
 # Include our download routes
 app.include_router(downloads.router, prefix="/api/v1", tags=["downloads"])
+
+# Include our test routes for debugging only (not for production)
+app.include_router(routes_test.router, prefix="/test", tags=["test"])
 
 
 @app.get("/")
