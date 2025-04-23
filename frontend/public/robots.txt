@@ -1,0 +1,11 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+# Sitemap location
+Sitemap: https://tiktokwatermarkremover.com/sitemap.xml
+# Disallow specific paths
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+# Crawl-delay
+Crawl-delay: 1
