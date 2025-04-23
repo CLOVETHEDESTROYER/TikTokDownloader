@@ -1,152 +1,97 @@
-# TikTokDownloader
-# 📥 TikTok Video Scraper & Downloader
+# TikTok and Instagram Downloader
 
-This project allows you to download TikTok videos (often without watermark) using Python and the powerful `yt-dlp` library.
+This project is a comprehensive solution for downloading videos from TikTok and Instagram using Python and the `yt-dlp` library. It includes both backend and frontend components to facilitate video downloading and management.
 
----
+## Features
 
-## 🚀 Features
+- **TikTok Video Downloading**: Download single or multiple TikTok videos, save them in high quality, and automatically name and organize files.
+- **Instagram Content Downloading**: Download Instagram posts, reels, and stories, with support for carousel posts and optional authentication for private content.
+- **CSV Export**: Export metadata of downloaded content to CSV files.
+- **Web Interface**: A Next.js frontend for interacting with the downloader.
 
-- ✅ Download single or multiple TikTok videos
-- ✅ Save videos in high quality
-- ✅ Automatically name and organize files
-- ✅ Extendable for GUI, Web, or Cloud sync
+## Requirements
 
----
+- Python 3.x
+- Node.js
+- `yt-dlp` library
+- Optional: Authentication cookies for Instagram private content
 
-## 🧰 Requirements
+## Installation
 
-Install Python libraries:
+1. **Clone the repository**:
 
-```bash
-pip install yt-dlp
-```
+   ```bash
+   git clone https://github.com/yourusername/TikTokDownloader.git
+   cd TikTokDownloader
+   ```
 
-Optionally, create a folder for downloads:
+2. **Install Python dependencies**:
 
-```bash
-mkdir downloads
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
----
+3. **Install Node.js dependencies**:
+   ```bash
+   cd frontend
+   npm install
+   ```
 
-## 📝 Step-by-Step Instructions
+## Usage
 
-### Step 1: Single Video Downloader
+### Backend
 
-Create a Python file named `tiktok_downloader.py`:
+1. **Run the FastAPI server**:
 
-```python
-import os
-import yt_dlp
+   ```bash
+   uvicorn backend.app.main:app --reload
+   ```
 
-def download_tiktok_video(url):
-    output_dir = "downloads"
-    os.makedirs(output_dir, exist_ok=True)
+2. **Access the API documentation**:
+   Open [http://localhost:8000/docs](http://localhost:8000/docs) in your browser.
 
-    ydl_opts = {
-        'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
-        'format': 'mp4',
-        'quiet': False,
-        'noplaylist': True
-    }
+### Frontend
 
-    try:
-        print(f"🔍 Downloading TikTok video from: {url}")
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        print("✅ Download completed!")
-    except Exception as e:
-        print(f"❌ Error: {e}")
+1. **Run the development server**:
 
-if __name__ == "__main__":
-    url = input("Paste the TikTok video URL: ").strip()
-    download_tiktok_video(url)
-```
+   ```bash
+   npm run dev
+   ```
 
----
+2. **Open the application**:
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Step 2: Batch Video Downloader
+## Authentication for Instagram
 
-Create a text file `tiktok_urls.txt` with one TikTok link per line:
+To download private content from Instagram, you need to provide authentication cookies:
 
-```
-https://www.tiktok.com/@user/video/1234567890
-https://www.tiktok.com/@user/video/2345678901
-```
+1. Log in to Instagram via your browser.
+2. Use a browser extension like "EditThisCookie" to export cookies.
+3. Save them to `instagram_cookies.txt` in the Netscape cookie format.
 
-Then create a new Python file `batch_tiktok_downloader.py`:
+## File Structure
 
-```python
-import os
-import yt_dlp
+- **backend/**: Contains the FastAPI application and services.
+- **frontend/**: Contains the Next.js application.
+- **downloads/**: Directory where downloaded videos are stored.
 
-def read_urls_from_file(file_path):
-    if not os.path.exists(file_path):
-        print(f"❌ File not found: {file_path}")
-        return []
+## Future Enhancements
 
-    with open(file_path, 'r') as file:
-        return [line.strip() for line in file.readlines() if line.strip()]
+- Watermark detection and removal
+- Cloud sync options
+- GUI with Tkinter
+- Telegram bot integration
 
-def download_tiktok_video(url, output_dir="downloads"):
-    os.makedirs(output_dir, exist_ok=True)
+## License
 
-    ydl_opts = {
-        'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
-        'format': 'mp4',
-        'quiet': False,
-        'noplaylist': True
-    }
+This project is licensed under the MIT License. See the LICENSE file for details.
 
-    try:
-        print(f"🔽 Downloading: {url}")
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        print("✅ Success!")
-    except Exception as e:
-        print(f"❌ Failed to download {url} — Error: {e}")
+## Contributing
 
-def batch_download(file_path="tiktok_urls.txt"):
-    urls = read_urls_from_file(file_path)
-    if not urls:
-        print("⚠️ No URLs found.")
-        return
+Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
 
-    for url in urls:
-        download_tiktok_video(url)
+## Contact
 
-if __name__ == "__main__":
-    batch_download("tiktok_urls.txt")
-```
+For any questions or support, please contact [your email].
 
 ---
-
-## 📁 File Structure
-
-```
-tiktok_downloader/
-├── downloads/
-├── tiktok_downloader.py
-├── batch_tiktok_downloader.py
-└── tiktok_urls.txt
-```
-
----
-
-## 🔧 Next Steps (Optional Features)
-
-| Feature                    | Description |
-|----------------------------|-------------|
-| 🧪 Watermark detection     | Auto-detect if watermark is present |
-| 📊 CSV export              | Log downloaded file names and metadata |
-| 🌐 Flask Web UI            | Upload text file via browser and start download |
-| 🎮 GUI (Tkinter)           | User-friendly interface for file input and download |
-| ☁️ Dropbox / GDrive Upload | Auto-sync to cloud after download |
-| 📱 Telegram Bot            | Download videos via chat commands |
-
----
-
-
----
-

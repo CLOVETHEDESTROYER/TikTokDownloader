@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+-always read the README.md before writing any code
+-after addubg a nahir featureor completigna milestone, update the README.md
+-Document the entire database scheme in README.md
+-For new migrations, make sure to add them to the same file.  
