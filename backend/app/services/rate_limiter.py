@@ -36,22 +36,22 @@ class RateLimiter:
         # Configure limits for different tiers
         self.tier_configs = {
             UserTier.FREE: RateLimitConfig(
-                max_requests=100,  # 100 requests per 30 minutes
-                window_seconds=1800,  # 30 minutes window
+                max_requests=50,  # 50 requests per 30 minutes
+                window_seconds=1800,  # 30 minute window
                 bulk_download_limit=5,  # 5 bulk downloads per 30 minutes
                 download_limit=5  # 5 downloads per 30 minutes for free users
             ),
             UserTier.PREMIUM: RateLimitConfig(
-                max_requests=500,
-                window_seconds=3600,
-                bulk_download_limit=20,
-                download_limit=100  # 100 downloads per hour for premium users
+                max_requests=250,
+                window_seconds=1800,
+                bulk_download_limit=10,
+                download_limit=50  # 50 downloads per 30 minutes for premium users
             ),
             UserTier.ENTERPRISE: RateLimitConfig(
-                max_requests=2000,
-                window_seconds=3600,
-                bulk_download_limit=100,
-                download_limit=500  # 500 downloads per hour for enterprise users
+                max_requests=1000,
+                window_seconds=1800,
+                bulk_download_limit=50,
+                download_limit=250  # 250 downloads per 30 minutes for enterprise users
             )
         }
 

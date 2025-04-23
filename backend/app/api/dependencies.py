@@ -53,7 +53,7 @@ async def check_download_limit(
         raise HTTPException(
             status_code=429,
             detail={
-                "error": "Download limit reached. Upgrade to Premium for more downloads. Try again in 30 minutes.",
+                "error": "Download limit reached. Upgrade to Premium for more downloads.",
                 "retry_after_seconds": retry_after
             }
         )

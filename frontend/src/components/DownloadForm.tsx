@@ -154,7 +154,7 @@ const DownloadForm: React.FC<DownloadFormProps> = ({ onVideoFetched }) => {
           
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-xs text-gray-500 dark:text-gray-400">
             <div className="mb-2 border-b border-gray-200 dark:border-gray-700 pb-2">
-              <span className="font-semibold">Free Plan:</span> 5 downloads per 30 minutes. <Link href="/premium" className="text-teal-600 dark:text-teal-400 hover:underline">Upgrade to Premium</Link> for unlimited downloads.
+              <span className="font-semibold">Free Plan:</span> 5 downloads per 30 minutes. <Link href="/premium" className="text-teal-600 dark:text-teal-400 hover:underline">Upgrade to Premium</Link> for more downloads.
             </div>
             <p className="flex items-center">
               <ExternalLink className="w-4 h-4 mr-2 text-gray-400" />
