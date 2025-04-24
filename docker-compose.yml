@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./downloads:/app/downloads
+    environment:
+      - ENV=production
+      - API_SECRET_KEY=${API_SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
+      - FRONTEND_URL=https://www.tiktokwatermarkremover.com
+      - ADDITIONAL_ALLOWED_ORIGINS=https://tiktokwatermarkremover.com
+      - MAX_DOWNLOADS=50
+      - MAX_CONCURRENT_DOWNLOADS=10
+      - VERIFY_SSL=true
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=https://www.tiktokwatermarkremover.com/api
+      - NEXT_PUBLIC_SITE_URL=https://www.tiktokwatermarkremover.com
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - downloads:/var/www/downloads
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    command: certonly --webroot -w /var/www/certbot --force-renewal --email HyperlabsNFT@gmail.com -d tiktokwatermarkremover.com -d www.tiktokwatermarkremover.com --agree-tos --non-interactive
+    depends_on:
+      - nginx
+
+volumes:
+  downloads: 

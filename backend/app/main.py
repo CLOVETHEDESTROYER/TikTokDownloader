@@ -6,13 +6,15 @@ from fastapi.security import APIKeyHeader
 import uvicorn
 import os
 import uuid
-from .api.routes import downloads
+from .api.routes import downloads, instagram
 from .core.error_handlers import setup_error_handlers
 from .core.config import settings
 from . import routes_test
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from starlette.responses import Response
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -34,12 +36,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization",
-                   "X-Request-ID", "X-API-Key"],
-    expose_headers=["X-Request-ID"],
-    max_age=86400,
+    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+    allow_methods=settings.CORS_ALLOW_METHODS,
+    allow_headers=settings.CORS_ALLOW_HEADERS,
+    expose_headers=settings.CORS_EXPOSE_HEADERS,
+    max_age=settings.CORS_MAX_AGE,
 )
 
 # Create downloads directory if it doesn't exist
@@ -88,6 +89,9 @@ async def health_check(request: Request):
 # Include our download routes
 app.include_router(downloads.router, prefix="/api/v1", tags=["downloads"])
 
+# Include Instagram routes
+app.include_router(instagram.router, prefix="/api/v1", tags=["instagram"])
+
 # Include our test routes for debugging only
 if settings.DEBUG:
     app.include_router(routes_test.router, prefix="/test", tags=["test"])
@@ -102,6 +106,12 @@ async def root(request: Request):
         "openapi_url": "/openapi.json",
         "env": settings.ENV
     }
+
+
+@app.get("/metrics")
+async def metrics():
+    """Endpoint for Prometheus metrics"""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 if __name__ == "__main__":
     uvicorn.run(

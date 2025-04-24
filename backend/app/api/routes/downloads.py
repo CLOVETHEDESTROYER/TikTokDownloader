@@ -9,10 +9,19 @@ from ...models.download import (
 )
 from ...services.download_manager import DownloadManager
 from ..dependencies import check_rate_limit, check_download_limit, check_bulk_download_limit, get_quota
+from ...core.metrics import (
+    DOWNLOAD_REQUESTS as download_requests_total,
+    DOWNLOAD_DURATION as download_duration_seconds,
+    ACTIVE_DOWNLOADS as active_downloads,
+    DOWNLOAD_ERRORS as download_errors_total
+)
 import asyncio
 import os
+import time
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import uuid
+from ...core.error_reporting import ErrorReporter
 
 router = APIRouter()
 download_manager = DownloadManager()
@@ -57,6 +66,18 @@ async def create_download(
     await ensure_cleanup_task_started()
 
     try:
+        # Increment download requests counter
+        download_requests_total.labels(
+            platform=download_request.platform.value,
+            quality=download_request.quality.value
+        ).inc()
+
+        # Increment active downloads gauge
+        active_downloads.labels(platform=download_request.platform.value).inc()
+
+        # Record start time
+        start_time = time.time()
+
         # Create a new download session
         session_id = await download_manager.create_download(
             url=str(download_request.url),
@@ -69,7 +90,8 @@ async def create_download(
             session_id,
             str(download_request.url),
             download_request.platform,
-            download_request.quality
+            download_request.quality,
+            start_time=start_time
         )
 
         return DownloadResponse(
@@ -80,6 +102,33 @@ async def create_download(
         )
 
     except Exception as e:
+        # Report the error with request context
+        ErrorReporter.report_error(
+            error_type=type(e).__name__,
+            message=str(e),
+            context={
+                "endpoint": "/download",
+                "request_data": download_request.dict(),
+                "client_ip": request.client.host if request.client else None,
+                "user_agent": request.headers.get("user-agent")
+            },
+            platform=download_request.platform.value,
+            url=str(download_request.url),
+            request_id=getattr(request.state, "request_id", None)
+        )
+
+        # Increment error counter and decrement active downloads
+        download_errors_total.labels(
+            platform=download_request.platform.value,
+            error_type=type(e).__name__
+        ).inc()
+        active_downloads.labels(platform=download_request.platform.value).dec()
+
+        if isinstance(e, DownloaderException):
+            raise HTTPException(
+                status_code=e.status_code,
+                detail={"error": e.message, "extra": e.extra}
+            )
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -183,10 +232,10 @@ async def download_file(
     if limiter:
         limiter.limit("20/minute")(download_file)(request)
 
-    # Ensure cleanup task is started
-    await ensure_cleanup_task_started()
-
     try:
+        # Ensure cleanup task is started
+        await ensure_cleanup_task_started()
+
         # Get the download status
         status = await download_manager.get_download_status(session_id)
         if status is None:
@@ -221,6 +270,16 @@ async def download_file(
 
         # Check if file exists
         if not os.path.exists(file_path):
+            ErrorReporter.report_error(
+                error_type="FileNotFoundError",
+                message=f"File not found on disk: {file_path}",
+                context={
+                    "session_id": session_id,
+                    "filename": status.filename,
+                    "status": status.dict()
+                },
+                request_id=getattr(request.state, "request_id", None)
+            )
             raise HTTPException(
                 status_code=404,
                 detail="File not found on server"
@@ -240,6 +299,17 @@ async def download_file(
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
+        ErrorReporter.report_error(
+            error_type=type(e).__name__,
+            message=str(e),
+            context={
+                "endpoint": f"/file/{session_id}",
+                "session_id": session_id,
+                "client_ip": request.client.host if request.client else None,
+                "user_agent": request.headers.get("user-agent")
+            },
+            request_id=getattr(request.state, "request_id", None)
+        )
         raise HTTPException(
             status_code=500,
             detail=f"Error downloading file: {str(e)}"

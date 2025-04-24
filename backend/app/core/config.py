@@ -31,6 +31,17 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
     ADDITIONAL_ALLOWED_ORIGINS: str = os.getenv(
         "ADDITIONAL_ALLOWED_ORIGINS", "")
+    CORS_ALLOW_CREDENTIALS: bool = os.getenv(
+        "CORS_ALLOW_CREDENTIALS", "true").lower() == "true"
+    CORS_ALLOW_METHODS: List[str] = os.getenv(
+        "CORS_ALLOW_METHODS", "GET,POST,OPTIONS").split(",")
+    CORS_ALLOW_HEADERS: List[str] = os.getenv(
+        "CORS_ALLOW_HEADERS",
+        "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
+    ).split(",")
+    CORS_EXPOSE_HEADERS: List[str] = os.getenv(
+        "CORS_EXPOSE_HEADERS", "X-Request-ID").split(",")
+    CORS_MAX_AGE: int = int(os.getenv("CORS_MAX_AGE", "3600"))
 
     @property
     def ALLOWED_ORIGINS(self) -> List[str]:
@@ -42,6 +53,8 @@ class Settings(BaseSettings):
             origins.extend([
                 "http://localhost:3000",
                 "http://localhost:8000",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:8000",
             ])
 
         # Add additional origins if specified
@@ -49,8 +62,8 @@ class Settings(BaseSettings):
             origins.extend(
                 [o.strip() for o in self.ADDITIONAL_ALLOWED_ORIGINS.split(",") if o.strip()])
 
-        # Remove duplicates
-        return list(set(origins))
+        # Remove duplicates and empty strings
+        return list(set(origin for origin in origins if origin))
 
     # Download settings
     DOWNLOAD_FOLDER: str = os.getenv("DOWNLOAD_FOLDER", "downloads")
@@ -63,6 +76,13 @@ class Settings(BaseSettings):
     VERIFY_SSL: bool = os.getenv(
         "VERIFY_SSL", "false").lower() in ("true", "1", "yes")
     ADMIN_API_KEY: Optional[str] = os.getenv("ADMIN_API_KEY")
+
+    # Instagram settings
+    INSTAGRAM_COOKIES_FILE: str = os.getenv(
+        "INSTAGRAM_COOKIES_FILE", "config/instagram_cookies.txt")
+    INSTAGRAM_MAX_RETRIES: int = int(os.getenv("INSTAGRAM_MAX_RETRIES", "3"))
+    INSTAGRAM_TIMEOUT: int = int(os.getenv("INSTAGRAM_TIMEOUT", "30"))
+    CONFIG_DIR: str = os.getenv("CONFIG_DIR", "config")
 
     @validator("API_SECRET_KEY", "JWT_SECRET_KEY")
     def validate_secrets(cls, v, values, **kwargs):

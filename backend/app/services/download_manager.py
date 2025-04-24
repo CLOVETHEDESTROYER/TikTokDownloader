@@ -18,6 +18,8 @@ from ..models.download import (
     VideoQuality,
     BatchDownloadResponse
 )
+from ..core.metrics import DOWNLOAD_DURATION as download_duration_seconds, ACTIVE_DOWNLOADS as active_downloads
+from ..core.error_reporting import ErrorReporter
 
 
 class DownloadManager:
@@ -154,7 +156,8 @@ class DownloadManager:
         session_id: str,
         url: str,
         platform: Platform,
-        quality: VideoQuality
+        quality: VideoQuality,
+        start_time: float
     ) -> DownloadResponse:
         """Process a single download with improved error handling"""
         if session_id not in self.active_downloads:
@@ -167,9 +170,27 @@ class DownloadManager:
             ydl_opts = self._get_ydl_opts(platform, quality, filename)
 
             # First, check if video exists and quality is available
-            info = await self._extract_video_info(url, ydl_opts)
-            if not info:
-                raise VideoNotFoundError(url)
+            try:
+                info = await self._extract_video_info(url, ydl_opts)
+                if not info:
+                    error = VideoNotFoundError(url)
+                    ErrorReporter.report_download_error(
+                        error=error,
+                        platform=platform.value,
+                        url=url,
+                        session_id=session_id,
+                        context={"stage": "video_info_extraction"}
+                    )
+                    raise error
+            except Exception as e:
+                ErrorReporter.report_download_error(
+                    error=e,
+                    platform=platform.value,
+                    url=url,
+                    session_id=session_id,
+                    context={"stage": "video_info_extraction"}
+                )
+                raise
 
             # Extract video metadata
             title = info.get('title', 'Untitled Video')
@@ -200,10 +221,35 @@ class DownloadManager:
             # Check if requested quality is available
             formats = info.get('formats', [])
             if not any(f for f in formats if self._matches_quality(f, quality)):
-                raise QualityNotAvailableError(url, quality.value)
+                error = QualityNotAvailableError(url, quality.value)
+                ErrorReporter.report_download_error(
+                    error=error,
+                    platform=platform.value,
+                    url=url,
+                    session_id=session_id,
+                    context={
+                        "stage": "quality_check",
+                        "requested_quality": quality.value,
+                        "available_formats": [f.get('format_id') for f in formats]
+                    }
+                )
+                raise error
 
             # Download the video
-            await self._download_video_async(url, ydl_opts, session_id)
+            try:
+                await self._download_video_async(url, ydl_opts, session_id)
+            except Exception as e:
+                ErrorReporter.report_download_error(
+                    error=e,
+                    platform=platform.value,
+                    url=url,
+                    session_id=session_id,
+                    context={
+                        "stage": "video_download",
+                        "filename": filename
+                    }
+                )
+                raise
 
             # Set completion status and timestamp
             self.active_downloads[session_id].update({
@@ -212,6 +258,13 @@ class DownloadManager:
                 "created_at": time.time(),
                 "expires_at": time.time() + self.file_expiry_seconds
             })
+
+            # Record download duration
+            duration = time.time() - start_time
+            download_duration_seconds.labels(
+                platform=platform.value,
+                quality=quality.value
+            ).observe(duration)
 
             # Prepare download response with additional metadata
             return DownloadResponse(
@@ -230,7 +283,19 @@ class DownloadManager:
         except Exception as e:
             self.active_downloads[session_id]["status"] = DownloadStatus.FAILED
             self.active_downloads[session_id]["error"] = str(e)
+            # Final error reporting if not caught in specific stages
+            if not isinstance(e, (VideoNotFoundError, QualityNotAvailableError, DownloadError)):
+                ErrorReporter.report_download_error(
+                    error=e,
+                    platform=platform.value,
+                    url=url,
+                    session_id=session_id,
+                    context={"stage": "unknown"}
+                )
             raise
+        finally:
+            # Decrement active downloads counter
+            active_downloads.labels(platform=platform.value).dec()
 
     def _matches_quality(self, format_info: dict, quality: VideoQuality) -> bool:
         """Check if format matches requested quality"""
