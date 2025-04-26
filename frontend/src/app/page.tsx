@@ -85,15 +85,20 @@ export default function Home() {
         {/* Hero Section */}
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">
-          TikTok Video Downloader
-        </h1>
+            TikTok Video Downloader
+          </h1>
           <p className="text-lg text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
             Download TikTok videos without watermark in seconds. Free, fast, and easy to use.
           </p>
         </div>
         
         {/* Ad Banner - Top */}
-        <AdBanner location="top" className="mb-8 mx-auto max-w-3xl" />
+        <AdBanner 
+          location="top" 
+          className="mb-8 mx-auto max-w-3xl" 
+          adSlot="1234567890"
+          format="horizontal"
+        />
         
         {/* Main Content */}
         <div className="flex flex-col lg:flex-row gap-8">
@@ -105,6 +110,14 @@ export default function Home() {
             {/* Video Preview */}
             <div id="video-preview" className="max-w-3xl mx-auto">
               <VideoPreview videoData={videoData} />
+              
+              {/* In-content Ad */}
+              <AdBanner 
+                location="in-content" 
+                className="mt-6" 
+                adSlot="9876543210"
+                format="rectangle"
+              />
             </div>
             
             {/* Active Downloads */}
@@ -125,14 +138,29 @@ export default function Home() {
             <Instructions />
             
             {/* Ad Banner - Bottom */}
-            <AdBanner location="bottom" className="mt-10 mx-auto max-w-3xl" />
+            <AdBanner 
+              location="bottom" 
+              className="mt-10 mx-auto max-w-3xl" 
+              adSlot="5432109876"
+              format="horizontal"
+            />
           </div>
 
           {/* Sidebar Ads (Desktop) */}
           <div className="hidden lg:block w-[300px] space-y-6">
             <div className="sticky top-4">
-              <AdBanner location="sidebar-top" className="h-[600px]" />
-              <AdBanner location="sidebar-bottom" className="mt-6 h-[250px]" />
+              <AdBanner 
+                location="sidebar-top" 
+                className="h-[600px]" 
+                adSlot="6789012345"
+                format="vertical"
+              />
+              <AdBanner 
+                location="sidebar-bottom" 
+                className="mt-6 h-[250px]" 
+                adSlot="3210987654"
+                format="rectangle"
+              />
             </div>
           </div>
         </div>

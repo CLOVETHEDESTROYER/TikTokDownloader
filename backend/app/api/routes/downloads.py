@@ -58,10 +58,6 @@ async def create_download(
     _: None = Depends(check_rate_limit),
     __: None = Depends(check_download_limit)
 ) -> DownloadResponse:
-    limiter = request.app.state.limiter
-    if limiter:
-        limiter.limit("10/minute")(create_download)(request)
-
     # Ensure cleanup task is started
     await ensure_cleanup_task_started()
 
@@ -140,10 +136,6 @@ async def create_batch_download(
     _: None = Depends(check_rate_limit),
     __: None = Depends(check_bulk_download_limit)
 ) -> BatchDownloadResponse:
-    limiter = request.app.state.limiter
-    if limiter:
-        limiter.limit("5/minute")(create_batch_download)(request)
-
     # Ensure cleanup task is started
     await ensure_cleanup_task_started()
 
@@ -180,10 +172,6 @@ async def get_download_status(
     session_id: str,
     _: None = Depends(check_rate_limit)
 ) -> DownloadResponse:
-    limiter = request.app.state.limiter
-    if limiter:
-        limiter.limit("60/minute")(get_download_status)(request)
-
     status = await download_manager.get_download_status(session_id)
     if status is None:
         raise HTTPException(
@@ -228,10 +216,6 @@ async def download_file(
     _: None = Depends(check_rate_limit)
 ):
     """Download a video file directly."""
-    limiter = request.app.state.limiter
-    if limiter:
-        limiter.limit("20/minute")(download_file)(request)
-
     try:
         # Ensure cleanup task is started
         await ensure_cleanup_task_started()

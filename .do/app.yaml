@@ -1,0 +1,35 @@
+name: tiktok-downloader
+services:
+  - name: backend
+    git:
+      branch: main
+      repo_clone_url: https://github.com/yourusername/TikTokDownloader.git
+    build_command: pip install -r requirements.txt
+    run_command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envs:
+      - key: PORT
+        value: "8000"
+      - key: ENV
+        value: "production"
+    health_check:
+      http_path: /health
+      port: 8000
+    instance_count: 1
+    instance_size_slug: basic-xxs
+
+  - name: frontend
+    git:
+      branch: main
+      repo_clone_url: https://github.com/yourusername/TikTokDownloader.git
+    build_command: cd frontend && npm install && npm run build
+    run_command: cd frontend && npm start
+    envs:
+      - key: PORT
+        value: "3000"
+      - key: NEXT_PUBLIC_API_URL
+        value: "${APP_URL}/api/v1"
+    health_check:
+      http_path: /
+      port: 3000
+    instance_count: 1
+    instance_size_slug: basic-xxs
