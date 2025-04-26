@@ -1,36 +1,43 @@
 version: '3.8'
 
 services:
-  backend:
+  api:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    volumes:
-      - ./downloads:/app/downloads
     environment:
-      - ENV=production
-      - API_SECRET_KEY=${API_SECRET_KEY}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - ADMIN_API_KEY=${ADMIN_API_KEY}
-      - FRONTEND_URL=https://www.tiktokwatermarkremover.com
-      - ADDITIONAL_ALLOWED_ORIGINS=https://tiktokwatermarkremover.com
+      - PORT=8000
+      - ENV=development
+      - API_SECRET_KEY=local-dev-secret
+      - JWT_SECRET_KEY=local-jwt-secret
+      - ADMIN_API_KEY=local-admin-key
       - MAX_DOWNLOADS=50
       - MAX_CONCURRENT_DOWNLOADS=10
-      - VERIFY_SSL=true
-    restart: unless-stopped
+      - VERIFY_SSL=false
+    volumes:
+      - ./backend:/app
+      - ./downloads:/app/downloads
+      - ./logs:/app/logs
 
-  frontend:
+  web:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=https://www.tiktokwatermarkremover.com/api
-      - NEXT_PUBLIC_SITE_URL=https://www.tiktokwatermarkremover.com
+      - PORT=3000
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
     depends_on:
-      - backend
-    restart: unless-stopped
+      - api
 
   nginx:
     image: nginx:alpine
@@ -44,8 +51,8 @@ services:
       - ./certbot/www:/var/www/certbot
       - downloads:/var/www/downloads
     depends_on:
-      - backend
-      - frontend
+      - api
+      - web
     restart: unless-stopped
 
   certbot:
