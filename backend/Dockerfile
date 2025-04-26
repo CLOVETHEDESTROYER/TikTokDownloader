@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including ffmpeg
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
@@ -11,13 +11,19 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy the rest of the application
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p downloads config
+RUN mkdir -p downloads
+RUN mkdir -p logs
 
-# Expose the port the app runs on
+# Set environment variables
+ENV PORT=8000
+ENV HOST=0.0.0.0
+ENV PYTHONUNBUFFERED=1
+
+# Expose the port
 EXPOSE 8000
 
 # Command to run the application

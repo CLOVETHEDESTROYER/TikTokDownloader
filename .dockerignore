@@ -1,10 +1,37 @@
-node_modules
-.next
+# Version control
 .git
-.env
-.env.local
-downloads
+.gitignore
+.gitattributes
+
+# Dependencies
+node_modules
+venv
 __pycache__
 *.pyc
-venv
-.DS_Store 
+.env
+.env.local
+
+# Build outputs
+frontend/.next
+frontend/out
+frontend/build
+frontend/.turbo
+
+# Development files
+.vscode
+.idea
+*.log
+.DS_Store
+
+# Application specific
+downloads/
+tmp/
+logs/
+*.mp4
+*.webm
+
+# Docker
+.docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore 

@@ -1,35 +1,51 @@
 name: tiktok-downloader
 services:
-  - name: backend
-    git:
+  - name: api
+    source_dir: backend
+    dockerfile_path: Dockerfile
+    github:
       branch: main
-      repo_clone_url: https://github.com/yourusername/TikTokDownloader.git
-    build_command: pip install -r requirements.txt
-    run_command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    envs:
-      - key: PORT
-        value: "8000"
-      - key: ENV
-        value: "production"
+      deploy_on_push: true
     health_check:
       http_path: /health
       port: 8000
     instance_count: 1
     instance_size_slug: basic-xxs
+    envs:
+      - key: PORT
+        value: "8000"
+      - key: ENV
+        value: "production"
+      - key: API_SECRET_KEY
+        type: SECRET
+        value: "your-secret-key-here"
+      - key: JWT_SECRET_KEY
+        type: SECRET
+        value: "your-jwt-secret-here"
+      - key: ADMIN_API_KEY
+        type: SECRET
+        value: "your-admin-key-here"
+      - key: MAX_DOWNLOADS
+        value: "50"
+      - key: MAX_CONCURRENT_DOWNLOADS
+        value: "10"
+      - key: VERIFY_SSL
+        value: "true"
 
-  - name: frontend
-    git:
+  - name: web
+    source_dir: frontend
+    dockerfile_path: Dockerfile
+    github:
       branch: main
-      repo_clone_url: https://github.com/yourusername/TikTokDownloader.git
-    build_command: cd frontend && npm install && npm run build
-    run_command: cd frontend && npm start
+      deploy_on_push: true
+    instance_count: 1
+    instance_size_slug: basic-xxs
     envs:
       - key: PORT
         value: "3000"
+      - key: NODE_ENV
+        value: "production"
       - key: NEXT_PUBLIC_API_URL
-        value: "${APP_URL}/api/v1"
-    health_check:
-      http_path: /
-      port: 3000
-    instance_count: 1
-    instance_size_slug: basic-xxs
+        value: "${_self.APP_URL}/api/v1"
+      - key: NEXT_PUBLIC_SITE_URL
+        value: "${_self.APP_URL}"
