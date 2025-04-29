@@ -1,8 +1,12 @@
 // Direct API access without using Next.js API routes
 // Use this in production environments to call the backend directly
 
-// Get the API base URL from environment variables
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// Explicitly set production API URL with the correct domain
+const API_URL = process.env.NODE_ENV === 'production'
+  ? 'https://api-tiksave-wk4wf.ondigitalocean.app/api/v1'  // Replace with your actual API domain
+  : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+console.log('API URL configured as:', API_URL);
 
 // Download status interface matching the backend model
 export interface DownloadStatus {
