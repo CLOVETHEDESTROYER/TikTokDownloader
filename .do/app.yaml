@@ -47,7 +47,7 @@ services:
       - key: NODE_ENV
         value: "production"
       - key: NEXT_PUBLIC_API_URL
-        value: "https://api-tiksave-wk4wf.ondigitalocean.app/api/v1"
+        value: "https://tiksave-wk4wf.ondigitalocean.app/api/v1"
       - key: NEXT_PUBLIC_SITE_URL
         value: "${_self.APP_URL}"
       - key: NEXT_TELEMETRY_DISABLED

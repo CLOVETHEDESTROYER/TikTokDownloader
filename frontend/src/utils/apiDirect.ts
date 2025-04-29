@@ -3,7 +3,7 @@
 
 // Explicitly set production API URL with the correct domain
 const API_URL = process.env.NODE_ENV === 'production'
-  ? 'https://api-tiksave-wk4wf.ondigitalocean.app/api/v1'  // Replace with your actual API domain
+  ? 'https://tiksave-wk4wf.ondigitalocean.app/api/v1'
   : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 console.log('API URL configured as:', API_URL);
