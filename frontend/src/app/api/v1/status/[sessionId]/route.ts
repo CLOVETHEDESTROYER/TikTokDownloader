@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { API_BASE_URL } from '../../../../../utils/api';
 
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { sessionId: string } }
 ) {
   const sessionId = params.sessionId;

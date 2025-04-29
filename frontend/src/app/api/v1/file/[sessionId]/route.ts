@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { API_BASE_URL } from "../../../../../utils/api";
 
+// Corrected type definition for GET function in Next.js 15
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { sessionId: string } }
 ) {
   try {
-    const sessionId = await Promise.resolve(params.sessionId);
+    const sessionId = params.sessionId;
 
     // Forward the request to the backend API
     const backendUrl = `${API_BASE_URL}/file/${sessionId}`;

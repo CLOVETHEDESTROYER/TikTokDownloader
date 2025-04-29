@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { API_BASE_URL } from '../../../../utils/api';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     // Get request body
     const body = await request.json();
