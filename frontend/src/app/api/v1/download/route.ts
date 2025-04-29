@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
-import { API_BASE_URL } from '../../../../utils/api';
+// Import only necessary modules
+const { API_BASE_URL } = require('../../../../utils/api');
 
-export async function POST(request: Request) {
+// Use a more basic approach without type annotations causing issues
+export async function POST(request) {
   try {
     // Get request body
     const body = await request.json();
@@ -29,15 +30,15 @@ export async function POST(request: Request) {
     
     // If the backend returns an error, pass it through
     if (!response.ok) {
-      return NextResponse.json(data, { status: response.status });
+      return Response.json(data, { status: response.status });
     }
     
     // Return the data
-    return NextResponse.json(data);
+    return Response.json(data);
   } catch (error) {
     console.error('Error proxying download request:', error);
     
-    return NextResponse.json(
+    return Response.json(
       { 
         error: 'Failed to create download',
         detail: error instanceof Error ? error.message : 'Unknown error'

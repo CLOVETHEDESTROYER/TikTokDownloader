@@ -34,7 +34,8 @@ services:
 
   - name: web
     source_dir: frontend
-    dockerfile_path: Dockerfile
+    build_command: npm install && NEXT_TELEMETRY_DISABLED=1 npx next build --no-lint
+    run_command: npm start
     github:
       branch: main
       deploy_on_push: true
@@ -49,3 +50,5 @@ services:
         value: "${_self.APP_URL}/api/v1"
       - key: NEXT_PUBLIC_SITE_URL
         value: "${_self.APP_URL}"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"

@@ -1,13 +1,10 @@
-import { NextResponse } from "next/server";
-import { API_BASE_URL } from "../../../../../utils/api";
+// Import only necessary modules
+const { API_BASE_URL } = require("../../../../../utils/api");
 
-// Corrected type definition for GET function in Next.js 15
-export async function GET(
-  request: Request,
-  { params }: { params: { sessionId: string } }
-) {
+// Use a more basic approach without type annotations causing issues
+export async function GET(request, context) {
   try {
-    const sessionId = params.sessionId;
+    const sessionId = context.params.sessionId;
 
     // Forward the request to the backend API
     const backendUrl = `${API_BASE_URL}/file/${sessionId}`;
@@ -27,7 +24,7 @@ export async function GET(
 
       try {
         const errorData = await response.json();
-        return NextResponse.json(
+        return Response.json(
           {
             error: errorData.detail || `Failed with status: ${response.status}`,
             detail: errorData.detail,
@@ -36,7 +33,7 @@ export async function GET(
         );
       } catch {
         // If we can't parse JSON error, return a generic error
-        return NextResponse.json(
+        return Response.json(
           { error: `Failed with status: ${response.status}` },
           { status: response.status }
         );
@@ -51,7 +48,7 @@ export async function GET(
     const contentDisposition = response.headers.get("Content-Disposition");
 
     // Create response with proper headers for download
-    const res = new NextResponse(fileBuffer, {
+    const res = new Response(fileBuffer, {
       status: 200,
       headers: {
         "Content-Type": contentType,
@@ -67,7 +64,7 @@ export async function GET(
   } catch (error) {
     console.error("Error proxying file download:", error);
 
-    return NextResponse.json(
+    return Response.json(
       {
         error: "Failed to download file",
         detail: error instanceof Error ? error.message : "Unknown error",
