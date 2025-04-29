@@ -15,6 +15,7 @@ from ...core.metrics import (
     ACTIVE_DOWNLOADS as active_downloads,
     DOWNLOAD_ERRORS as download_errors_total
 )
+from ...core.exceptions import DownloaderException
 import asyncio
 import os
 import time
@@ -140,6 +141,16 @@ async def create_batch_download(
     await ensure_cleanup_task_started()
 
     try:
+        # Increment download requests counter for each URL
+        for url in batch_request.urls:
+            download_requests_total.labels(
+                platform=batch_request.platform.value,
+                quality=batch_request.quality.value
+            ).inc()
+
+        # Increment active downloads gauge
+        active_downloads.labels(platform=batch_request.platform.value).inc()
+
         # Create a new download session
         session_id = await download_manager.create_download(
             url=str(batch_request.urls[0]),  # Use first URL for session
@@ -163,6 +174,34 @@ async def create_batch_download(
         )
 
     except Exception as e:
+        # Report the error with request context
+        ErrorReporter.report_error(
+            error_type=type(e).__name__,
+            message=str(e),
+            context={
+                "endpoint": "/batch-download",
+                "request_data": batch_request.dict(),
+                "client_ip": request.client.host if request.client else None,
+                "user_agent": request.headers.get("user-agent")
+            },
+            platform=batch_request.platform.value,
+            url=str(batch_request.urls[0]
+                    ) if batch_request.urls else "unknown",
+            request_id=getattr(request.state, "request_id", None)
+        )
+
+        # Increment error counter and decrement active downloads
+        download_errors_total.labels(
+            platform=batch_request.platform.value,
+            error_type=type(e).__name__
+        ).inc()
+        active_downloads.labels(platform=batch_request.platform.value).dec()
+
+        if isinstance(e, DownloaderException):
+            raise HTTPException(
+                status_code=e.status_code,
+                detail={"error": e.message, "extra": e.extra}
+            )
         raise HTTPException(status_code=400, detail=str(e))
 
 

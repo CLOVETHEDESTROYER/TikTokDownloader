@@ -87,8 +87,8 @@ async def health_check(request: Request):
 # Include our download routes
 app.include_router(downloads.router, prefix="/api/v1", tags=["downloads"])
 
-# Include Instagram routes
-app.include_router(instagram.router, prefix="/api/v1", tags=["instagram"])
+# Include Instagram routes - temporarily disabled
+# app.include_router(instagram.router, prefix="/api/v1", tags=["instagram"])
 
 # Include our test routes for debugging only
 if settings.DEBUG:

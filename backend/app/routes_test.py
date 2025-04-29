@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 import os
 import time
-from app.models.download import DownloadStatus, Platform
-from app.services.download_manager import DownloadManager
+from .models.download import DownloadStatus, Platform
+from .services.download_manager import DownloadManager
 
 router = APIRouter()
 download_manager = DownloadManager()
