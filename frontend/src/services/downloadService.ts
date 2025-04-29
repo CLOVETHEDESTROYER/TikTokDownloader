@@ -1,3 +1,5 @@
+import { createDownload as createDirectDownload } from '@/utils/apiDirect';
+
 export interface TikTokVideoData {
   id: string;
   title: string;
@@ -25,6 +27,37 @@ export const downloadTikTokVideo = async (
   quality: 'HIGH' | 'MEDIUM' | 'LOW' = 'HIGH'
 ): Promise<TikTokVideoData> => {
   try {
+    // In production, use the direct API approach to avoid Next.js API routing issues
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Using direct API approach in production');
+      const data = await createDirectDownload(
+        url.trim(),
+        'tiktok',
+        quality.toLowerCase()
+      );
+      
+      // Format the response to match our interface
+      return {
+        id: data.id || `video-${Date.now()}`,
+        title: data.title || 'TikTok Video',
+        author: data.author || '@user',
+        duration: data.duration,
+        thumbnail: data.thumbnail || 'https://placehold.co/600x800/9b5cf6/ffffff?text=TikTok+Thumbnail',
+        preview_url: data.preview_url,
+        download_url: data.download_url || data.file_path,
+        session_id: data.session_id || `session-${Date.now()}`,
+        // Create downloadLinks array if it doesn't exist
+        downloadLinks: data.downloadLinks || [
+          {
+            quality: quality,
+            size: 'Unknown',
+            url: data.download_url || data.file_path || '#'
+          }
+        ]
+      };
+    }
+    
+    // In development, use the Next.js API route approach
     // Call the Next.js API route which proxies to the backend
     const apiUrl = '/api/v1/download';
     

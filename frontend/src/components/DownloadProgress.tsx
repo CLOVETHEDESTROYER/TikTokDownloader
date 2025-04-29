@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Check, AlertCircle } from 'lucide-react';
 import ExpirationCountdown from './ExpirationCountdown';
+import { getDownloadStatus } from '@/utils/apiDirect';
 
 interface DownloadProgressProps {
   sessionId: string;
@@ -16,7 +17,7 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
   expiresAt
 }) => {
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState<'processing' | 'completed' | 'error' | 'expired'>('processing');
+  const [status, setStatus] = useState<'pending' | 'processing' | 'completed' | 'error' | 'expired'>('processing');
   const [error, setError] = useState<string | null>(null);
 
   const handleExpired = () => {
@@ -24,40 +25,66 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
     setError('Download link has expired. Please request a new download.');
   };
 
-  // Simulate download progress
+  // Poll for real status updates in production, simulate in development
   useEffect(() => {
-    if (status !== 'processing') return;
+    if (status === 'completed' || status === 'expired') return;
 
-    const interval = setInterval(() => {
-      setProgress((prevProgress) => {
-        if (prevProgress >= 100) {
-          clearInterval(interval);
-          return 100;
+    const pollStatus = async () => {
+      try {
+        // In production, get real status
+        if (process.env.NODE_ENV === 'production') {
+          const statusData = await getDownloadStatus(sessionId);
+          
+          console.log('Status update:', statusData);
+          
+          // Update progress
+          setProgress(statusData.progress || 0);
+          
+          // Update status
+          if (statusData.status === 'completed') {
+            setStatus('completed');
+            onComplete();
+          } else if (statusData.status === 'failed') {
+            setStatus('error');
+            setError(statusData.error || 'Download failed. Please try again.');
+          } else if (statusData.status === 'expired') {
+            setStatus('expired');
+            setError('Download link has expired. Please request a new download.');
+          } else {
+            setStatus(statusData.status as any);
+          }
+          
+          return;
         }
-        return prevProgress + 10;
-      });
-      
-      // Check if progress has reached 100 and update status
-      if (progress >= 90) {
-        setStatus('completed');
-        // Call onComplete in the next tick to avoid rendering issues
-        setTimeout(() => {
+        
+        // In development, simulate progress
+        setProgress((prevProgress) => {
+          if (prevProgress >= 100) {
+            return 100;
+          }
+          return prevProgress + 10;
+        });
+        
+        // Check if progress has reached 100 and update status
+        if (progress >= 90) {
+          setStatus('completed');
           onComplete();
-        }, 0);
-        clearInterval(interval);
+        }
+      } catch (err) {
+        console.error('Error checking download status:', err);
+        setStatus('error');
+        setError('Failed to check download status. Please try again.');
       }
-    }, 500);
-
-    // Simulate random errors (for testing) - uncomment to test error states
-    const simulateError = false; // Set to true to test error state
-    if (simulateError) {
-      clearInterval(interval);
-      setStatus('error');
-      setError('Download failed. The server might be busy, please try again.');
-    }
-
+    };
+    
+    // Poll every 2 seconds
+    const interval = setInterval(pollStatus, 2000);
+    
+    // Initial poll
+    pollStatus();
+    
     return () => clearInterval(interval);
-  }, [status, progress, onComplete]);
+  }, [sessionId, status, progress, onComplete]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
@@ -84,7 +111,9 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
                   ? 'Download Failed'
                   : status === 'expired'
                     ? 'Download Expired'
-                    : 'Downloading Video...'}
+                    : status === 'pending'
+                      ? 'Waiting in Queue...'
+                      : 'Downloading Video...'}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Session ID: {sessionId.substring(0, 8)}...
@@ -105,7 +134,7 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
         </div>
       </div>
 
-      {status === 'processing' && (
+      {(status === 'processing' || status === 'pending') && (
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
           <div 
             className="bg-gradient-to-r from-teal-500 to-purple-500 h-2 rounded-full transition-all duration-300" 

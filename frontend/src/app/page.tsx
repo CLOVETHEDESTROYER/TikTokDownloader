@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import DownloadForm from '@/components/DownloadForm';
 import VideoPreview from '@/components/VideoPreview';
@@ -8,6 +8,7 @@ import RecentDownloads from '@/components/RecentDownloads';
 import Instructions from '@/components/Instructions';
 import AdBanner from '@/components/AdBanner';
 import DownloadProgress from '@/components/DownloadProgress';
+import ApiDebugger from '@/components/ApiDebugger';
 import Script from 'next/script';
 import { TikTokVideoData } from '@/services/downloadService';
 
@@ -31,6 +32,14 @@ interface VideoData {
 export default function Home() {
   const [activeDownloads, setActiveDownloads] = useState<string[]>([]);
   const [videoData, setVideoData] = useState<VideoData | null>(null);
+  const [showDebugger, setShowDebugger] = useState(false);
+  
+  // Set the debugger visibility based on environment
+  useEffect(() => {
+    // Show the debugger in production to troubleshoot deployment issues
+    // Later you can change this to only show in development
+    setShowDebugger(true);
+  }, []);
 
   const handleDownloadComplete = (sessionId: string) => {
     setActiveDownloads((prev) => prev.filter((id) => id !== sessionId));
@@ -89,6 +98,11 @@ export default function Home() {
           </h1>
           <p className="text-lg text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
             Download TikTok videos without watermark in seconds. Free, fast, and easy to use.
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            {process.env.NODE_ENV === 'development' 
+              ? '🔧 Running in development mode' 
+              : '🚀 Running in production mode'}
           </p>
         </div>
         
@@ -164,6 +178,9 @@ export default function Home() {
             </div>
           </div>
         </div>
+        
+        {/* API Debugger - Only visible when showDebugger is true */}
+        {showDebugger && <ApiDebugger />}
       </main>
     </>
   );
