@@ -122,6 +122,18 @@ export const downloadVideoWithProgress = async (
       const fileUrl = `http://localhost:8000/api/v1/file/${sessionId}`;
       console.log(`Downloading with progress directly from backend: ${fileUrl}`);
       
+      // First, get the status to get an estimated size (if available)
+      const estimatedSize = 0;
+      try {
+        const status = await getDownloadStatus(sessionId);
+        if (status && status.filename) {
+          console.log(`Download status for ${sessionId}:`, status);
+        }
+      } catch (e) {
+        console.warn('Could not get download status for size estimation:', e);
+      }
+      
+      // Now fetch the actual file
       const response = await fetch(fileUrl, {
         method: 'GET',
         headers: {
@@ -148,7 +160,30 @@ export const downloadVideoWithProgress = async (
       }
 
       // Get content length from headers if available
-      const contentLength = Number(response.headers.get('Content-Length')) || 0;
+      const contentLength = Number(response.headers.get('Content-Length')) || estimatedSize;
+      
+      // If no content length is available, we'll simulate progress
+      const hasRealProgress = contentLength > 0;
+      console.log(`Content length: ${contentLength}, has real progress: ${hasRealProgress}`);
+      
+      // For simulated progress, we'll update in 10 steps
+      let simulatedProgress = 0;
+      let simulatedInterval: number | null = null;
+      
+      if (!hasRealProgress && onProgress) {
+        // Start simulated progress updates
+        simulatedInterval = window.setInterval(() => {
+          simulatedProgress += 10;
+          if (simulatedProgress > 90) {
+            if (simulatedInterval) {
+              clearInterval(simulatedInterval);
+              simulatedInterval = null;
+            }
+            return;
+          }
+          onProgress(simulatedProgress);
+        }, 500) as unknown as number;
+      }
       
       // Create array to store chunks
       const chunks: Uint8Array[] = [];
@@ -166,10 +201,15 @@ export const downloadVideoWithProgress = async (
         receivedLength += value.length;
         
         // Report progress if callback provided and content length is known
-        if (onProgress && contentLength > 0) {
+        if (onProgress && hasRealProgress) {
           const progress = Math.min(Math.round((receivedLength / contentLength) * 100), 100);
           onProgress(progress);
         }
+      }
+      
+      // Clear any simulation interval if it exists
+      if (simulatedInterval) {
+        clearInterval(simulatedInterval);
       }
       
       // Report 100% progress when done
@@ -187,6 +227,7 @@ export const downloadVideoWithProgress = async (
       
       // Convert to blob and resolve
       const blob = new Blob([allChunks], { type: response.headers.get('Content-Type') || 'video/mp4' });
+      console.log(`Download completed for ${sessionId}, total size: ${receivedLength} bytes`);
       resolve(blob);
       
     } catch (error) {

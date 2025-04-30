@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, FileDown, CheckCircle, Share2, User, Clock, AlertCircle } from 'lucide-react';
+import { ExternalLink, FileDown, CheckCircle, Share2, User, Clock, AlertCircle, Download } from 'lucide-react';
 import Image from 'next/image';
 import ExpirationCountdown from './ExpirationCountdown';
 import { downloadVideoWithProgress } from '../utils/api';
@@ -35,6 +35,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
   const [isExpired, setIsExpired] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [showProgressBar, setShowProgressBar] = useState(false);
 
   // Check for expiration when component mounts or data changes
   useEffect(() => {
@@ -68,6 +69,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
     setDownloadStarted(true);
     setDownloadProgress(0);
     setError(null);
+    setShowProgressBar(true);
     
     try {
       // Use the downloadVideoWithProgress to track progress
@@ -101,12 +103,14 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
       setTimeout(() => {
         setDownloadStarted(false);
         setSelectedQuality(null);
-      }, 1500);
+        setShowProgressBar(false);
+      }, 3000);
     } catch (error) {
       console.error('Download failed:', error);
       setError(error instanceof Error ? error.message : 'Failed to download the video. Please try again.');
       setDownloadStarted(false);
       setSelectedQuality(null);
+      setShowProgressBar(false);
     }
   };
 
@@ -139,6 +143,38 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4 text-red-600 dark:text-red-400 flex items-start">
             <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
             <p>{error}</p>
+          </div>
+        )}
+        
+        {/* Show progress bar when download is in progress */}
+        {showProgressBar && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mr-3">
+                  <Download className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                    {downloadProgress < 100 ? 'Downloading Video...' : 'Download Complete'}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {downloadProgress < 100 
+                      ? 'Please wait while your video is being prepared...'
+                      : 'Your video is ready to save locally'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                {downloadProgress}%
+              </div>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-teal-500 to-purple-500 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${downloadProgress}%` }}
+              ></div>
+            </div>
           </div>
         )}
         

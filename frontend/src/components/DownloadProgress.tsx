@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Check, AlertCircle } from 'lucide-react';
 import ExpirationCountdown from './ExpirationCountdown';
-import { getDownloadStatus } from '@/utils/apiDirect';
+import { getDownloadStatus } from '@/utils/api';
 
 interface DownloadProgressProps {
   sessionId: string;
@@ -25,55 +25,56 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
     setError('Download link has expired. Please request a new download.');
   };
 
-  // Poll for real status updates in production, simulate in development
+  // Poll for status updates from the API
   useEffect(() => {
     if (status === 'completed' || status === 'expired') return;
 
     const pollStatus = async () => {
       try {
-        // In production, get real status
-        if (process.env.NODE_ENV === 'production') {
-          const statusData = await getDownloadStatus(sessionId);
-          
-          console.log('Status update:', statusData);
-          
-          // Update progress
-          setProgress(statusData.progress || 0);
-          
-          // Update status
-          if (statusData.status === 'completed') {
-            setStatus('completed');
-            onComplete();
-          } else if (statusData.status === 'failed') {
-            setStatus('error');
-            setError(statusData.error || 'Download failed. Please try again.');
-          } else if (statusData.status === 'expired') {
-            setStatus('expired');
-            setError('Download link has expired. Please request a new download.');
-          } else {
-            setStatus(statusData.status as any);
-          }
-          
-          return;
-        }
+        // Get real status from API
+        const statusData = await getDownloadStatus(sessionId);
         
-        // In development, simulate progress
-        setProgress((prevProgress) => {
-          if (prevProgress >= 100) {
-            return 100;
-          }
-          return prevProgress + 10;
-        });
+        console.log('Status update for session', sessionId, ':', statusData);
         
-        // Check if progress has reached 100 and update status
-        if (progress >= 90) {
+        // Update progress
+        setProgress(statusData.progress || 0);
+        
+        // Update status
+        if (statusData.status === 'completed') {
           setStatus('completed');
           onComplete();
+        } else if (statusData.status === 'failed') {
+          setStatus('error');
+          setError(statusData.error || 'Download failed. Please try again.');
+        } else if (statusData.status === 'expired') {
+          setStatus('expired');
+          setError('Download link has expired. Please request a new download.');
+        } else {
+          // Map the backend status to our component status
+          setStatus(
+            statusData.status === 'pending' ? 'pending' :
+            statusData.status === 'processing' ? 'processing' : 
+            'processing'
+          );
         }
       } catch (err) {
         console.error('Error checking download status:', err);
-        setStatus('error');
-        setError('Failed to check download status. Please try again.');
+        
+        // If API call fails, simulate progress in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Simulating progress for development...');
+          setProgress((prevProgress) => {
+            // Don't go beyond 95% in simulation
+            if (prevProgress >= 95) {
+              return 95;
+            }
+            return prevProgress + Math.floor(Math.random() * 10) + 5;
+          });
+        } else {
+          // In production, show error
+          setStatus('error');
+          setError('Failed to check download status. Please try again.');
+        }
       }
     };
     
@@ -84,7 +85,7 @@ const DownloadProgress: React.FC<DownloadProgressProps> = ({
     pollStatus();
     
     return () => clearInterval(interval);
-  }, [sessionId, status, progress, onComplete]);
+  }, [sessionId, status, onComplete]); // Remove progress from dependency array to prevent rapid updates
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
