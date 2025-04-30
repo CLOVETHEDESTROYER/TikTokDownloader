@@ -6,8 +6,9 @@ export async function GET(request, context) {
   const sessionId = context.params.sessionId;
   
   try {
-    // Forward the request to the backend API
-    const backendUrl = `${API_BASE_URL}/status/${sessionId}`;
+    // Forward the request to the backend API using direct URL
+    const backendUrl = `http://localhost:8000/api/v1/status/${sessionId}`;
+    console.log('Forwarding status request to:', backendUrl);
     
     const response = await fetch(backendUrl);
     
@@ -16,6 +17,7 @@ export async function GET(request, context) {
     
     // If the backend returns an error, pass it through
     if (!response.ok) {
+      console.error('Backend API error:', data);
       return Response.json(data, { status: response.status });
     }
     

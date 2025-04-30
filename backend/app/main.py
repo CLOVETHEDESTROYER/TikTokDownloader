@@ -35,7 +35,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Configure CORS using settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://tiksave-wk4wf.ondigitalocean.app"],
+    allow_origins=[
+        "https://tiksave-wk4wf.ondigitalocean.app",
+        "http://localhost:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

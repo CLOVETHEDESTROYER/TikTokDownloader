@@ -1,10 +1,15 @@
 // Direct API access without using Next.js API routes
 // Use this in production environments to call the backend directly
 
-// Explicitly set production API URL with the correct domain
-const API_URL = process.env.NODE_ENV === 'production'
-  ? 'https://tiksave-wk4wf.ondigitalocean.app/api/v1'
-  : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// Health check response type
+interface HealthCheckResponse {
+  status: string;
+  version: string;
+  env: string;
+}
+
+// Use a more direct approach for API URL
+const API_URL = 'http://localhost:8000/api/v1';
 
 console.log('API URL configured as:', API_URL);
 
@@ -41,7 +46,7 @@ export async function createDownload(url: string, platform: string, quality: str
     try {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Failed to create download: ${response.status}`);
-    } catch (e) {
+    } catch (_) {
       throw new Error(`Request failed with status ${response.status}`);
     }
   }
@@ -59,7 +64,7 @@ export async function getDownloadStatus(sessionId: string): Promise<DownloadStat
     try {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Failed to get status: ${response.status}`);
-    } catch (e) {
+    } catch (_) {
       throw new Error(`Request failed with status ${response.status}`);
     }
   }
@@ -82,7 +87,7 @@ export async function downloadVideo(sessionId: string): Promise<Blob> {
     try {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Download failed with status ${response.status}`);
-    } catch (e) {
+    } catch (_) {
       throw new Error(`Download failed with status ${response.status}`);
     }
   }
@@ -93,14 +98,17 @@ export async function downloadVideo(sessionId: string): Promise<Blob> {
 /**
  * Check the health of the API
  */
-export async function checkApiHealth(): Promise<any> {
+export async function checkApiHealth(): Promise<HealthCheckResponse> {
   try {
-    const response = await fetch(`${API_URL.replace('/api/v1', '')}/health`);
+    // Use the base URL without /api/v1 for health check
+    const healthUrl = 'http://localhost:8000/health';
+    console.log('Checking API health at:', healthUrl);
+    const response = await fetch(healthUrl);
     if (!response.ok) {
       throw new Error(`Health check failed with status ${response.status}`);
     }
     return response.json();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('API Health Check Error:', error);
     throw error;
   }

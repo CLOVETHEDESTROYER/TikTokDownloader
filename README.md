@@ -141,7 +141,19 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
    - Backend on port 8000
    - Nginx reverse proxy on ports 80/443
 
-2. **Manual Deployment**:
+2. **DigitalOcean Deployment Configuration**:
+
+   - Frontend is configured to serve at root path (`/`)
+   - Backend API is configured under `/api` path
+   - Environment Variables Required:
+     - `NEXT_PUBLIC_API_URL`: Must be set to the production API URL
+     - `NEXT_PUBLIC_SITE_URL`: Production frontend URL
+   - HTTP Routes Configuration:
+     - Frontend: Serves at `/`
+     - Backend: Serves at `/api`
+     - Health Check: Available at `/health`
+
+3. **Manual Deployment**:
    - Set up Nginx as reverse proxy
    - Configure SSL certificates
    - Set up environment variables

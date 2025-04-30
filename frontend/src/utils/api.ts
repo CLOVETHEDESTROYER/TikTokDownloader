@@ -21,8 +21,14 @@ export interface DownloadStatus {
  * @returns A Promise resolving to a Blob containing the video data
  */
 export const downloadVideo = async (sessionId: string): Promise<Blob> => {
-  // Use the Next.js API route for file downloads to avoid CORS issues
-  const response = await fetch(`${FRONTEND_API_BASE_URL}/file/${sessionId}`, {
+  // Log the download attempt
+  console.log(`Attempting to download file with session ID: ${sessionId}`);
+  
+  // Use direct backend URL to avoid routing issues
+  const fileUrl = `http://localhost:8000/api/v1/file/${sessionId}`;
+  console.log(`Downloading directly from backend: ${fileUrl}`);
+  
+  const response = await fetch(fileUrl, {
     method: 'GET',
     headers: {
       'Accept': 'video/mp4',
@@ -112,8 +118,11 @@ export const downloadVideoWithProgress = async (
 ): Promise<Blob> => {
   return new Promise(async (resolve, reject) => {
     try {
-      // Use the Next.js API route for file downloads
-      const response = await fetch(`${FRONTEND_API_BASE_URL}/file/${sessionId}`, {
+      // Use direct backend URL to avoid routing issues
+      const fileUrl = `http://localhost:8000/api/v1/file/${sessionId}`;
+      console.log(`Downloading with progress directly from backend: ${fileUrl}`);
+      
+      const response = await fetch(fileUrl, {
         method: 'GET',
         headers: {
           'Accept': 'video/mp4',

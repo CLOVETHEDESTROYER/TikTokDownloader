@@ -1,13 +1,10 @@
-// Import only necessary modules
-const { API_BASE_URL } = require("../../../../../utils/api");
-
-// Use a more basic approach without type annotations causing issues
+// No imports needed
 export async function GET(request, context) {
   try {
     const sessionId = context.params.sessionId;
 
-    // Forward the request to the backend API
-    const backendUrl = `${API_BASE_URL}/file/${sessionId}`;
+    // Forward the request to the backend API using the correct path
+    const backendUrl = `http://localhost:8000/api/v1/file/${sessionId}`;
 
     console.log(`Proxying file download request to: ${backendUrl}`);
 

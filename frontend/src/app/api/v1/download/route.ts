@@ -7,8 +7,9 @@ export async function POST(request) {
     // Get request body
     const body = await request.json();
     
-    // Forward the request to the backend API
-    const backendUrl = `${API_BASE_URL}/download`;
+    // Forward the request to the backend API using direct URL
+    const backendUrl = 'http://localhost:8000/api/v1/download';
+    console.log('Forwarding download request to:', backendUrl);
     
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -30,6 +31,7 @@ export async function POST(request) {
     
     // If the backend returns an error, pass it through
     if (!response.ok) {
+      console.error('Backend API error:', data);
       return Response.json(data, { status: response.status });
     }
     
