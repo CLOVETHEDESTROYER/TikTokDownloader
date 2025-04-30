@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, FileDown, CheckCircle, Share2, User, Clock, AlertCircle, Download } from 'lucide-react';
+import { ExternalLink, FileDown, CheckCircle, Share2, User, Clock, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import ExpirationCountdown from './ExpirationCountdown';
-import { downloadVideoWithProgress } from '../utils/api';
+import { downloadVideoWithProgress } from '@/utils/api';
+import SimpleDownloadProgress from './SimpleDownloadProgress';
 
 interface VideoData {
   id: string;
@@ -34,8 +35,8 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
   const [downloadStarted, setDownloadStarted] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadStatus, setDownloadStatus] = useState<'downloading' | 'completed' | 'error'>('downloading');
   const [error, setError] = useState<string | null>(null);
-  const [showProgressBar, setShowProgressBar] = useState(false);
 
   // Check for expiration when component mounts or data changes
   useEffect(() => {
@@ -69,13 +70,18 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
     setDownloadStarted(true);
     setDownloadProgress(0);
     setError(null);
-    setShowProgressBar(true);
+    setDownloadStatus('downloading');
     
     try {
       // Use the downloadVideoWithProgress to track progress
       const blob = await downloadVideoWithProgress(
         videoData.session_id,
-        (progress) => setDownloadProgress(progress)
+        (progress) => {
+          setDownloadProgress(progress);
+          if (progress === 100) {
+            setDownloadStatus('completed');
+          }
+        }
       );
       
       // Create a URL for the blob
@@ -99,18 +105,12 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
       // Clean up the URL
       window.URL.revokeObjectURL(downloadUrl);
       
-      // Update UI - don't reset immediately to show 100% progress
-      setTimeout(() => {
-        setDownloadStarted(false);
-        setSelectedQuality(null);
-        setShowProgressBar(false);
-      }, 3000);
+      // Keep the completed state visible
+      setDownloadStatus('completed');
     } catch (error) {
       console.error('Download failed:', error);
       setError(error instanceof Error ? error.message : 'Failed to download the video. Please try again.');
-      setDownloadStarted(false);
-      setSelectedQuality(null);
-      setShowProgressBar(false);
+      setDownloadStatus('error');
     }
   };
 
@@ -147,35 +147,12 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
         )}
         
         {/* Show progress bar when download is in progress */}
-        {showProgressBar && (
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mr-3">
-                  <Download className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                    {downloadProgress < 100 ? 'Downloading Video...' : 'Download Complete'}
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {downloadProgress < 100 
-                      ? 'Please wait while your video is being prepared...'
-                      : 'Your video is ready to save locally'}
-                  </p>
-                </div>
-              </div>
-              <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                {downloadProgress}%
-              </div>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-teal-500 to-purple-500 h-2 rounded-full transition-all duration-300" 
-                style={{ width: `${downloadProgress}%` }}
-              ></div>
-            </div>
-          </div>
+        {downloadStarted && (
+          <SimpleDownloadProgress
+            progress={downloadProgress}
+            status={downloadStatus}
+            error={error || undefined}
+          />
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -279,10 +256,10 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
                       </div>
                       <button
                         onClick={() => handleDownload(link.url, link.quality)}
-                        disabled={downloadStarted}
+                        disabled={downloadStarted && downloadStatus === 'downloading'}
                         className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 ${
-                          downloadStarted
-                            ? selectedQuality === link.quality
+                          downloadStarted && selectedQuality === link.quality
+                            ? downloadStatus === 'completed'
                               ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
                               : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
                             : 'bg-teal-100 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-200 dark:hover:bg-teal-900/30'
@@ -290,13 +267,15 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ videoData }) => {
                       >
                         {downloadStarted && selectedQuality === link.quality ? (
                           <>
-                            {downloadProgress < 100 ? (
+                            {downloadStatus === 'downloading' ? (
                               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-1" />
                             ) : (
                               <CheckCircle className="w-4 h-4" />
                             )}
                             <span>
-                              {downloadProgress < 100 ? 'Downloading...' : 'Download Complete'}
+                              {downloadStatus === 'downloading'
+                                ? 'Downloading...'
+                                : 'Download Complete'}
                             </span>
                           </>
                         ) : (

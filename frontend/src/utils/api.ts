@@ -1,8 +1,8 @@
 // API Base URL with fallback to localhost
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-// Use the Next.js API routes for frontend requests
-export const FRONTEND_API_BASE_URL = '/api/v1';
+// Use the Next.js API routes for frontend requests - no need to include /api/v1 since it's in the rewrite rule
+export const FRONTEND_API_BASE_URL = '';
 
 // Download status interface matching the backend model
 export interface DownloadStatus {
@@ -55,8 +55,8 @@ export const downloadVideo = async (sessionId: string): Promise<Blob> => {
  * @returns A Promise resolving to the download status
  */
 export const getDownloadStatus = async (sessionId: string): Promise<DownloadStatus> => {
-  // Use the Next.js API route for status requests
-  const response = await fetch(`${FRONTEND_API_BASE_URL}/status/${sessionId}`);
+  // Use the direct backend URL for status requests, just like we do for file downloads
+  const response = await fetch(`${API_BASE_URL}/status/${sessionId}`);
   
   if (!response.ok) {
     try {
@@ -82,7 +82,7 @@ export const createDownload = async (
   platform: string, 
   quality: string
 ): Promise<DownloadStatus> => {
-  const response = await fetch(`${FRONTEND_API_BASE_URL}/download`, {
+  const response = await fetch(`/api/v1/download`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
