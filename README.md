@@ -137,37 +137,39 @@ NEXT_PUBLIC_WEBSITE_API_KEY=your-website-key
    - API Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
    - OpenAPI Spec: [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json)
 
-### Production Deployment
+### Production Deployment (DigitalOcean)
 
-1. **Using Docker (Recommended)**:
+### Prerequisites
 
-   ```bash
-   docker compose up -d
-   ```
+- DigitalOcean account
+- GitHub repository connected to DigitalOcean
+- Domain name (optional but recommended)
 
-   This will start:
+### Deployment Steps
 
-   - Frontend on port 3000
-   - Backend on port 8000
-   - Nginx reverse proxy on ports 80/443
+1. Fork/clone the repository
+2. Configure environment variables in DigitalOcean dashboard
+3. Deploy using App Platform
+4. Set up SSL certificates
+5. Configure domain (if applicable)
 
-2. **DigitalOcean Deployment Configuration**:
+### Environment Variables
 
-   - Frontend is configured to serve at root path (`/`)
-   - Backend API is configured under `/api` path
-   - Environment Variables Required:
-     - `NEXT_PUBLIC_API_URL`: Must be set to the production API URL
-     - `NEXT_PUBLIC_SITE_URL`: Production frontend URL
-   - HTTP Routes Configuration:
-     - Frontend: Serves at `/`
-     - Backend: Serves at `/api`
-     - Health Check: Available at `/health`
+Required environment variables for production:
 
-3. **Manual Deployment**:
-   - Set up Nginx as reverse proxy
-   - Configure SSL certificates
-   - Set up environment variables
-   - Run the services using PM2 or similar process manager
+- `API_SECRET_KEY`: API master key
+- `JWT_SECRET_KEY`: JWT signing key
+- `ADMIN_API_KEY`: Admin access key
+- `WEBSITE_API_KEY`: Website access key
+- `NODE_ENV`: Set to 'production'
+- `NEXT_PUBLIC_API_URL`: Production API URL
+- `NEXT_PUBLIC_SITE_URL`: Production site URL
+
+### Monitoring
+
+- Access logs through DigitalOcean dashboard
+- Monitor resource usage and scaling
+- Set up alerts for critical events
 
 ## API Endpoints
 
@@ -206,35 +208,85 @@ Access metrics at `/metrics` endpoint (requires authentication).
 
 ## API Authentication
 
-The API is secured using API key authentication. To access the API endpoints, you need to include a valid API key in the request headers.
+The API uses a robust two-tier API key authentication system to secure all endpoints. This system ensures that only authorized clients can access the API while maintaining different levels of access control.
 
-### API Key Header
+### Authentication System
 
-Include your API key in the request header:
+1. **API Key Types**:
+   - **Admin Key**: Full access to all endpoints, including protected administrative routes
+   - **Website Key**: Standard access for frontend client operations
+2. **Implementation Details**:
+   - API keys must be included in all requests via the `X-API-Key` header
+   - CORS preflight (OPTIONS) requests are automatically handled
+   - Development mode can bypass authentication for easier local development
+   - Keys are validated against environment variables
 
-```
+### Request Headers
+
+For authenticated requests, include:
+
+```http
 X-API-Key: your-api-key-here
 ```
 
 ### Security Features
 
-- API key authentication required for all endpoints (except documentation)
-- Two types of API keys:
-  - **Admin Key**: For administrative access and protected endpoints
-  - **Website Key**: For regular API usage from the website
-- Configurable API key settings (header name, requirement flag)
-- Environment-specific security settings
-- Automatic key validation in production
+- **Mandatory Authentication**: All endpoints require valid API keys (except health checks and documentation)
+- **Environment-Aware**:
+  - Production: Strict API key validation
+  - Development: Optional authentication bypass
+- **CORS Protection**:
+  - Preflight requests handled automatically
+  - Configurable allowed origins
+  - Secure header validation
+- **Error Handling**:
+  - Clear 401 Unauthorized responses for invalid/missing keys
+  - Detailed error messages in development
+  - Generic security responses in production
 
 ### Configuration
 
-Set the following environment variables:
+1. **Environment Variables**:
 
-- `API_SECRET_KEY`: Master secret key for the API
-- `ADMIN_API_KEY`: Admin access key for protected endpoints
-- `WEBSITE_API_KEY`: Website access key for regular API usage
-- `API_KEY_HEADER_NAME`: Custom header name for API key (default: X-API-Key)
-- `REQUIRE_API_KEY`: Enable/disable API key requirement (default: true)
+   ```env
+   # Backend (.env)
+   API_SECRET_KEY=your-secret-key
+   ADMIN_API_KEY=your-admin-key
+   WEBSITE_API_KEY=your-website-key
+   API_KEY_HEADER_NAME=X-API-Key
+   REQUIRE_API_KEY=true
+
+   # Frontend (.env.local)
+   NEXT_PUBLIC_WEBSITE_API_KEY=your-website-key
+   ```
+
+2. **Development Mode**:
+   - Set `REQUIRE_API_KEY=false` for local development
+   - API key validation is bypassed when disabled
+   - Warning logs indicate when authentication is bypassed
+
+### Implementation Notes
+
+- Frontend automatically includes API key in all requests
+- WebSocket connections require valid API keys
+- Rate limiting is tied to API key tiers
+- Keys are validated before processing any request
+- Middleware handles authentication across all routes
+
+### Best Practices
+
+1. **Key Management**:
+
+   - Rotate API keys regularly
+   - Use different keys for different environments
+   - Never expose admin keys in frontend code
+   - Store keys securely in environment variables
+
+2. **Security Recommendations**:
+   - Enable SSL/TLS in production
+   - Monitor failed authentication attempts
+   - Implement key expiration if needed
+   - Regular security audits
 
 ## Progress Tracking System
 

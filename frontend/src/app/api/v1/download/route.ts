@@ -10,12 +10,17 @@ export async function POST(request: NextRequest) {
     const backendUrl = 'http://localhost:8000/api/v1/download';
     console.log('Forwarding download request to:', backendUrl);
     
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    if (process.env.NEXT_PUBLIC_WEBSITE_API_KEY) {
+      headers['X-API-Key'] = process.env.NEXT_PUBLIC_WEBSITE_API_KEY;
+    }
+
     const response = await fetch(backendUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || 'website_key_456',
-      },
+      headers,
       body: JSON.stringify(body),
     });
     

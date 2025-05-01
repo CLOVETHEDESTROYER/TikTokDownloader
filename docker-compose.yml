@@ -9,16 +9,16 @@ services:
       - "8000:8000"
     environment:
       - PORT=8000
-      - ENV=development
-      - API_SECRET_KEY=local-dev-secret
-      - JWT_SECRET_KEY=local-jwt-secret
-      - ADMIN_API_KEY=local-admin-key
-      - WEBSITE_API_KEY=local-website-key
+      - ENV=${ENV:-development}
+      - API_SECRET_KEY=${API_SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
+      - WEBSITE_API_KEY=${WEBSITE_API_KEY}
       - API_KEY_HEADER_NAME=X-API-Key
-      - REQUIRE_API_KEY=false
+      - REQUIRE_API_KEY=${REQUIRE_API_KEY:-false}
       - MAX_DOWNLOADS=50
       - MAX_CONCURRENT_DOWNLOADS=10
-      - VERIFY_SSL=false
+      - VERIFY_SSL=${VERIFY_SSL:-false}
     volumes:
       - ./backend:/app
       - ./downloads:/app/downloads
@@ -32,10 +32,10 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
-      - NEXT_PUBLIC_WEBSITE_API_KEY=local-website-key
+      - NODE_ENV=${NODE_ENV:-development}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_WEBSITE_API_KEY=${WEBSITE_API_KEY}
     volumes:
       - ./frontend:/app
       - /app/node_modules

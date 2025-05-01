@@ -10,12 +10,18 @@ export async function GET(request: NextRequest, context: { params: { sessionId: 
 
     console.log(`Proxying file download request to: ${backendUrl}`);
 
+    const headers: HeadersInit = {
+      Accept: "video/mp4",
+      'Content-Type': 'application/json',
+    };
+
+    if (process.env.NEXT_PUBLIC_WEBSITE_API_KEY) {
+      headers['X-API-Key'] = process.env.NEXT_PUBLIC_WEBSITE_API_KEY;
+    }
+
     const response = await fetch(backendUrl, {
       method: "GET",
-      headers: {
-        Accept: "video/mp4",
-        'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || 'website_key_456',
-      },
+      headers,
     });
 
     // If the backend returns an error, pass it through

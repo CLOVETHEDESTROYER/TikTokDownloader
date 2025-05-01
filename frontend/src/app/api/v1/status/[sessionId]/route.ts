@@ -5,15 +5,17 @@ export async function GET(request: NextRequest, context: { params: { sessionId: 
   const sessionId = context.params.sessionId;
   
   try {
-    // Forward the request to the backend API using direct URL
-    const backendUrl = `http://localhost:8000/api/v1/status/${sessionId}`;
-    console.log('Forwarding status request to:', backendUrl);
-    
-    const response = await fetch(backendUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || 'website_key_456',
-      }
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    if (process.env.NEXT_PUBLIC_WEBSITE_API_KEY) {
+      headers['X-API-Key'] = process.env.NEXT_PUBLIC_WEBSITE_API_KEY;
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/status/${sessionId}`, {
+      method: 'GET',
+      headers,
     });
     
     // Get response data
