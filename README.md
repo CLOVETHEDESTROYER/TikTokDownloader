@@ -19,6 +19,12 @@ This project is a comprehensive solution for downloading videos from TikTok and 
 - **API Documentation**: Interactive Swagger UI documentation.
 - **Docker Support**: Easy deployment with Docker and Docker Compose.
 - **Security Features**: API key authentication, CORS protection, secure file handling, and robust IP detection.
+- **Enhanced Progress Tracking**:
+  - Real-time download progress with multiple stages (analyzing, downloading, processing)
+  - Visual progress indicators with status icons for downloading, completion, and errors
+  - Dark mode compatible progress UI
+  - WebSocket integration for real-time progress updates
+  - Automatic cleanup tracking with expiration countdown
 
 ## Requirements
 
@@ -241,5 +247,52 @@ Contributions are welcome! Please:
 ## Contact
 
 For any questions or support, please contact [your email].
+
+## Progress Tracking System
+
+The application features a comprehensive progress tracking system:
+
+### Frontend Components
+
+- **SimpleDownloadProgress**: Lightweight progress indicator for video previews
+
+  - Shows download percentage
+  - Status icons for downloading, completion, and errors
+  - Dark mode support
+  - Error message display
+
+- **ProcessingProgress**: Multi-stage progress indicator
+  - Analyzing stage (33%)
+  - Downloading stage (66%)
+  - Processing stage (90%)
+  - Real-time status updates
+  - Animated loading indicators
+
+### Backend Implementation
+
+- WebSocket-based real-time updates
+- Progress tracking for both single and batch downloads
+- Automatic status management:
+  - Pending: Initial request state
+  - Processing: Active download
+  - Completed: Successful download
+  - Error: Failed download
+  - Expired: Download link timeout
+
+### Features
+
+- Automatic file cleanup tracking
+- Download expiration countdown
+- Batch download progress tracking
+- Error handling with detailed messages
+- Rate limit quota display
+- Dark mode support for all progress elements
+
+### Progress States
+
+1. **Analyzing** (33%): Initial URL verification and metadata extraction
+2. **Downloading** (66%): Active video download
+3. **Processing** (90%): Final video processing and optimization
+4. **Completion** (100%): Download ready for access
 
 ---
