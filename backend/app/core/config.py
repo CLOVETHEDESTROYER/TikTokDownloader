@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
+    # API Security settings
+    API_KEY_HEADER_NAME: str = os.getenv("API_KEY_HEADER_NAME", "X-API-Key")
+    WEBSITE_API_KEY: Optional[str] = os.getenv("WEBSITE_API_KEY")
+    REQUIRE_API_KEY: bool = os.getenv(
+        "REQUIRE_API_KEY", "true").lower() in ("true", "1", "yes")
+
     # Environment
     ENV: str = os.getenv("ENV", "development")
     DEBUG: bool = ENV == "development"
@@ -91,6 +97,14 @@ class Settings(BaseSettings):
         if env == "production" and v == "CHANGEME_IN_PRODUCTION!":
             raise ValueError(
                 "Secret keys must be changed in production environment")
+        return v
+
+    @validator("WEBSITE_API_KEY", "ADMIN_API_KEY")
+    def validate_api_keys_in_production(cls, v, values):
+        """Validate that API keys are set in production."""
+        env = values.get("ENV")
+        if env == "production" and values.get("REQUIRE_API_KEY") and not v:
+            raise ValueError("API keys must be set in production environment")
         return v
 
     # Redis (if needed)

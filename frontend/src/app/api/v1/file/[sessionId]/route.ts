@@ -1,5 +1,7 @@
+import { NextRequest } from 'next/server';
+
 // No imports needed
-export async function GET(request, context) {
+export async function GET(request: NextRequest, context: { params: { sessionId: string } }) {
   try {
     const sessionId = context.params.sessionId;
 
@@ -12,6 +14,7 @@ export async function GET(request, context) {
       method: "GET",
       headers: {
         Accept: "video/mp4",
+        'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || 'website_key_456',
       },
     });
 

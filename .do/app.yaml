@@ -25,6 +25,13 @@ services:
       - key: ADMIN_API_KEY
         type: SECRET
         value: "your-admin-key-here"
+      - key: WEBSITE_API_KEY
+        type: SECRET
+        value: "your-website-key-here"
+      - key: API_KEY_HEADER_NAME
+        value: "X-API-Key"
+      - key: REQUIRE_API_KEY
+        value: "true"
       - key: MAX_DOWNLOADS
         value: "50"
       - key: MAX_CONCURRENT_DOWNLOADS
@@ -50,5 +57,8 @@ services:
         value: "https://tiksave-wk4wf.ondigitalocean.app/api/v1"
       - key: NEXT_PUBLIC_SITE_URL
         value: "${_self.APP_URL}"
+      - key: NEXT_PUBLIC_WEBSITE_API_KEY
+        type: SECRET
+        value: "your-website-key-here"
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"

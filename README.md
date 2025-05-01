@@ -81,6 +81,9 @@ This project is a comprehensive solution for downloading videos from TikTok and 
 API_SECRET_KEY=your-secret-key
 JWT_SECRET_KEY=your-jwt-secret
 ADMIN_API_KEY=your-admin-key
+WEBSITE_API_KEY=your-website-key
+API_KEY_HEADER_NAME=X-API-Key
+REQUIRE_API_KEY=true
 
 # Server Settings
 PORT=8000
@@ -109,6 +112,7 @@ METRICS_PORT=9090
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_WEBSITE_API_KEY=your-website-key
 ```
 
 ## Usage
@@ -192,12 +196,92 @@ Access metrics at `/metrics` endpoint (requires authentication).
 
 - Tiered rate limiting with IP-based tracking
 - Robust IP detection through multiple headers
-- API key authentication for admin endpoints
-- CORS protection
+- API key authentication for all API endpoints
+- Dual-key system: admin key and website key
+- CORS protection with configurable origins
 - File size limits
 - Download retention policies
 - SSL/TLS encryption
 - Trusted proxy configuration
+
+## API Authentication
+
+The API is secured using API key authentication. To access the API endpoints, you need to include a valid API key in the request headers.
+
+### API Key Header
+
+Include your API key in the request header:
+
+```
+X-API-Key: your-api-key-here
+```
+
+### Security Features
+
+- API key authentication required for all endpoints (except documentation)
+- Two types of API keys:
+  - **Admin Key**: For administrative access and protected endpoints
+  - **Website Key**: For regular API usage from the website
+- Configurable API key settings (header name, requirement flag)
+- Environment-specific security settings
+- Automatic key validation in production
+
+### Configuration
+
+Set the following environment variables:
+
+- `API_SECRET_KEY`: Master secret key for the API
+- `ADMIN_API_KEY`: Admin access key for protected endpoints
+- `WEBSITE_API_KEY`: Website access key for regular API usage
+- `API_KEY_HEADER_NAME`: Custom header name for API key (default: X-API-Key)
+- `REQUIRE_API_KEY`: Enable/disable API key requirement (default: true)
+
+## Progress Tracking System
+
+The application features a comprehensive progress tracking system:
+
+### Frontend Components
+
+- **SimpleDownloadProgress**: Lightweight progress indicator for video previews
+
+  - Shows download percentage
+  - Status icons for downloading, completion, and errors
+  - Dark mode support
+  - Error message display
+
+- **ProcessingProgress**: Multi-stage progress indicator
+  - Analyzing stage (33%)
+  - Downloading stage (66%)
+  - Processing stage (90%)
+  - Real-time status updates
+  - Animated loading indicators
+
+### Backend Implementation
+
+- WebSocket-based real-time updates
+- Progress tracking for both single and batch downloads
+- Automatic status management:
+  - Pending: Initial request state
+  - Processing: Active download
+  - Completed: Successful download
+  - Error: Failed download
+  - Expired: Download link timeout
+
+### Features
+
+- Automatic file cleanup tracking
+- Download expiration countdown
+- Batch download progress tracking
+- Error handling with detailed messages
+- Rate limit quota display
+- Dark mode support for all progress elements
+
+### Progress States
+
+1. **Analyzing** (33%): Initial URL verification and metadata extraction
+2. **Downloading** (66%): Active video download
+3. **Processing** (90%): Final video processing and optimization
+4. **Completion** (100%): Download ready for access
 
 ## File Structure
 
@@ -247,52 +331,5 @@ Contributions are welcome! Please:
 ## Contact
 
 For any questions or support, please contact [your email].
-
-## Progress Tracking System
-
-The application features a comprehensive progress tracking system:
-
-### Frontend Components
-
-- **SimpleDownloadProgress**: Lightweight progress indicator for video previews
-
-  - Shows download percentage
-  - Status icons for downloading, completion, and errors
-  - Dark mode support
-  - Error message display
-
-- **ProcessingProgress**: Multi-stage progress indicator
-  - Analyzing stage (33%)
-  - Downloading stage (66%)
-  - Processing stage (90%)
-  - Real-time status updates
-  - Animated loading indicators
-
-### Backend Implementation
-
-- WebSocket-based real-time updates
-- Progress tracking for both single and batch downloads
-- Automatic status management:
-  - Pending: Initial request state
-  - Processing: Active download
-  - Completed: Successful download
-  - Error: Failed download
-  - Expired: Download link timeout
-
-### Features
-
-- Automatic file cleanup tracking
-- Download expiration countdown
-- Batch download progress tracking
-- Error handling with detailed messages
-- Rate limit quota display
-- Dark mode support for all progress elements
-
-### Progress States
-
-1. **Analyzing** (33%): Initial URL verification and metadata extraction
-2. **Downloading** (66%): Active video download
-3. **Processing** (90%): Final video processing and optimization
-4. **Completion** (100%): Download ready for access
 
 ---

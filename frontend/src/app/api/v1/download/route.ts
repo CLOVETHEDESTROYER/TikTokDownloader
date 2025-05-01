@@ -1,8 +1,7 @@
-// Import only necessary modules
-const { API_BASE_URL } = require('../../../../utils/api');
+import { NextRequest } from 'next/server';
 
 // Use a more basic approach without type annotations causing issues
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
     // Get request body
     const body = await request.json();
@@ -15,6 +14,7 @@ export async function POST(request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || 'website_key_456',
       },
       body: JSON.stringify(body),
     });

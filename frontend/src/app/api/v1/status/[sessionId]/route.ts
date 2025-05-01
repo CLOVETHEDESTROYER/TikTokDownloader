@@ -1,8 +1,7 @@
-// Import only necessary modules
-const { API_BASE_URL } = require('../../../../../utils/api');
+import { NextRequest } from 'next/server';
 
 // Use a more basic approach without type annotations causing issues
-export async function GET(request, context) {
+export async function GET(request: NextRequest, context: { params: { sessionId: string } }) {
   const sessionId = context.params.sessionId;
   
   try {
@@ -10,7 +9,12 @@ export async function GET(request, context) {
     const backendUrl = `http://localhost:8000/api/v1/status/${sessionId}`;
     console.log('Forwarding status request to:', backendUrl);
     
-    const response = await fetch(backendUrl);
+    const response = await fetch(backendUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || 'website_key_456',
+      }
+    });
     
     // Get response data
     const data = await response.json();

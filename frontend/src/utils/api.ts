@@ -4,6 +4,24 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 // Use the Next.js API routes for frontend requests - no need to include /api/v1 since it's in the rewrite rule
 export const FRONTEND_API_BASE_URL = '';
 
+// Website API key from environment variables
+export const WEBSITE_API_KEY = process.env.NEXT_PUBLIC_WEBSITE_API_KEY || '';
+
+// Default headers for API requests
+export const getDefaultHeaders = () => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  
+  // Add API key if available
+  if (WEBSITE_API_KEY) {
+    headers['X-API-Key'] = WEBSITE_API_KEY;
+  }
+  
+  return headers;
+};
+
 // Download status interface matching the backend model
 export interface DownloadStatus {
   session_id: string;
@@ -25,13 +43,14 @@ export const downloadVideo = async (sessionId: string): Promise<Blob> => {
   console.log(`Attempting to download file with session ID: ${sessionId}`);
   
   // Use direct backend URL to avoid routing issues
-  const fileUrl = `http://localhost:8000/api/v1/file/${sessionId}`;
+  const fileUrl = `${API_BASE_URL}/file/${sessionId}`;
   console.log(`Downloading directly from backend: ${fileUrl}`);
   
   const response = await fetch(fileUrl, {
     method: 'GET',
     headers: {
       'Accept': 'video/mp4',
+      ...(WEBSITE_API_KEY ? { 'X-API-Key': WEBSITE_API_KEY } : {}),
     },
   });
 
@@ -56,7 +75,9 @@ export const downloadVideo = async (sessionId: string): Promise<Blob> => {
  */
 export const getDownloadStatus = async (sessionId: string): Promise<DownloadStatus> => {
   // Use the direct backend URL for status requests, just like we do for file downloads
-  const response = await fetch(`${API_BASE_URL}/status/${sessionId}`);
+  const response = await fetch(`${API_BASE_URL}/status/${sessionId}`, {
+    headers: getDefaultHeaders(),
+  });
   
   if (!response.ok) {
     try {
@@ -84,9 +105,7 @@ export const createDownload = async (
 ): Promise<DownloadStatus> => {
   const response = await fetch(`/api/v1/download`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getDefaultHeaders(),
     body: JSON.stringify({
       url,
       platform,
@@ -119,7 +138,7 @@ export const downloadVideoWithProgress = async (
   return new Promise(async (resolve, reject) => {
     try {
       // Use direct backend URL to avoid routing issues
-      const fileUrl = `http://localhost:8000/api/v1/file/${sessionId}`;
+      const fileUrl = `${API_BASE_URL}/file/${sessionId}`;
       console.log(`Downloading with progress directly from backend: ${fileUrl}`);
       
       // First, get the status to get an estimated size (if available)
@@ -138,6 +157,7 @@ export const downloadVideoWithProgress = async (
         method: 'GET',
         headers: {
           'Accept': 'video/mp4',
+          ...(WEBSITE_API_KEY ? { 'X-API-Key': WEBSITE_API_KEY } : {}),
         },
       });
 

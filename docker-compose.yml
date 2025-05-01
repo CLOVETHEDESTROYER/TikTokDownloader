@@ -13,6 +13,9 @@ services:
       - API_SECRET_KEY=local-dev-secret
       - JWT_SECRET_KEY=local-jwt-secret
       - ADMIN_API_KEY=local-admin-key
+      - WEBSITE_API_KEY=local-website-key
+      - API_KEY_HEADER_NAME=X-API-Key
+      - REQUIRE_API_KEY=false
       - MAX_DOWNLOADS=50
       - MAX_CONCURRENT_DOWNLOADS=10
       - VERIFY_SSL=false
@@ -32,6 +35,7 @@ services:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
       - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+      - NEXT_PUBLIC_WEBSITE_API_KEY=local-website-key
     volumes:
       - ./frontend:/app
       - /app/node_modules

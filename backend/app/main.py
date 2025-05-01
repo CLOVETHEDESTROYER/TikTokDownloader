@@ -20,7 +20,8 @@ from starlette.responses import Response
 limiter = Limiter(key_func=get_remote_address)
 
 # Initialize API key security
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+api_key_header = APIKeyHeader(
+    name=settings.API_KEY_HEADER_NAME, auto_error=False)
 
 app = FastAPI(
     title="Social Media Downloader API",
@@ -35,10 +36,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Configure CORS using settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://tiksave-wk4wf.ondigitalocean.app",
-        "http://localhost:3000"
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,13 +55,39 @@ setup_error_handlers(app)
 # API Key dependency for admin-only endpoints
 
 
-async def verify_api_key(api_key: str = Depends(api_key_header)):
+async def verify_admin_api_key(api_key: str = Depends(api_key_header)):
     if settings.ADMIN_API_KEY and api_key != settings.ADMIN_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid API key",
+            detail="Invalid admin API key",
         )
     return api_key
+
+# API Key dependency for general endpoints
+
+
+async def verify_api_key(api_key: str = Depends(api_key_header)):
+    # Skip API key check in development mode if configured
+    if settings.ENV == "development" and not settings.REQUIRE_API_KEY:
+        return api_key
+
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key is missing",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    # Check if the API key matches either the admin key or the website key
+    if (settings.ADMIN_API_KEY and api_key == settings.ADMIN_API_KEY) or \
+       (settings.WEBSITE_API_KEY and api_key == settings.WEBSITE_API_KEY):
+        return api_key
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Invalid API key",
+        headers={"WWW-Authenticate": "ApiKey"},
+    )
 
 # Request ID middleware
 
@@ -74,6 +98,57 @@ async def add_request_id(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Request-ID"] = request.state.request_id
     return response
+
+# Path patterns that don't require API key verification
+OPEN_API_PATHS = [
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    "/health",
+]
+
+# API Key middleware
+
+
+@app.middleware("http")
+async def api_key_middleware(request: Request, call_next):
+    # Skip authentication for OPTIONS requests (CORS preflight)
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
+    # Skip authentication for open paths
+    for path in OPEN_API_PATHS:
+        if request.url.path.startswith(path):
+            return await call_next(request)
+
+    # Skip API key check in development mode if configured
+    if settings.ENV == "development" and not settings.REQUIRE_API_KEY:
+        return await call_next(request)
+
+    # Check API key
+    api_key = request.headers.get(settings.API_KEY_HEADER_NAME)
+
+    # If no API key is provided and it's required
+    if not api_key and settings.REQUIRE_API_KEY:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": "API key is missing"},
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    # If API key is provided, validate it
+    if api_key and settings.REQUIRE_API_KEY:
+        if (settings.ADMIN_API_KEY and api_key == settings.ADMIN_API_KEY) or \
+           (settings.WEBSITE_API_KEY and api_key == settings.WEBSITE_API_KEY):
+            return await call_next(request)
+
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"detail": "Invalid API key"},
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    return await call_next(request)
 
 # Health check endpoint
 
@@ -110,8 +185,8 @@ async def root(request: Request):
 
 
 @app.get("/metrics")
-async def metrics():
-    """Endpoint for Prometheus metrics"""
+async def metrics(api_key: str = Depends(verify_admin_api_key)):
+    """Endpoint for Prometheus metrics - admin access only"""
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 if __name__ == "__main__":
