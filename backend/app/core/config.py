@@ -41,41 +41,39 @@ class Settings(BaseSettings):
     CORS_ALLOW_CREDENTIALS: bool = os.getenv(
         "CORS_ALLOW_CREDENTIALS", "true").lower() == "true"
 
-    # Properly parse CORS_ALLOW_METHODS as JSON if it's a JSON string, otherwise split by comma
-    @property
-    def CORS_ALLOW_METHODS(self) -> List[str]:
-        methods_value = os.getenv("CORS_ALLOW_METHODS", "GET,POST,OPTIONS")
+    # Helper method to parse environment variables that should be lists
+    def _parse_list_env(self, env_name: str, default_value: str) -> List[str]:
+        value = os.getenv(env_name, default_value)
 
-        if methods_value.startswith("[") and methods_value.endswith("]"):
-            # Try to parse as JSON
+        # If empty, return empty list
+        if not value:
+            return []
+
+        # Try to parse as JSON if it starts and ends with brackets
+        if value.startswith("[") and value.endswith("]"):
             try:
-                return json.loads(methods_value)
+                return json.loads(value)
             except json.JSONDecodeError:
                 pass
 
-        # Fallback to comma-separated string
-        return methods_value.split(",")
+        # Fall back to comma-separated string
+        return [item.strip() for item in value.split(",") if item.strip()]
+
+    # Define properties for all list-type environment variables
+    @property
+    def CORS_ALLOW_METHODS(self) -> List[str]:
+        return self._parse_list_env("CORS_ALLOW_METHODS", "GET,POST,OPTIONS")
 
     @property
     def CORS_ALLOW_HEADERS(self) -> List[str]:
-        headers_value = os.getenv(
+        return self._parse_list_env(
             "CORS_ALLOW_HEADERS",
             "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
         )
 
-        if headers_value.startswith("[") and headers_value.endswith("]"):
-            # Try to parse as JSON
-            try:
-                return json.loads(headers_value)
-            except json.JSONDecodeError:
-                pass
-
-        # Fallback to comma-separated string
-        return headers_value.split(",")
-
-    CORS_EXPOSE_HEADERS: List[str] = os.getenv(
-        "CORS_EXPOSE_HEADERS", "X-Request-ID").split(",")
-    CORS_MAX_AGE: int = int(os.getenv("CORS_MAX_AGE", "3600"))
+    @property
+    def CORS_EXPOSE_HEADERS(self) -> List[str]:
+        return self._parse_list_env("CORS_EXPOSE_HEADERS", "X-Request-ID")
 
     @property
     def ALLOWED_ORIGINS(self) -> List[str]:
