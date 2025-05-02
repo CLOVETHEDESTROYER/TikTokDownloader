@@ -1,5 +1,7 @@
 // API Base URL with fallback to localhost
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+export const API_URL = process.env.NODE_ENV === 'production'
+  ? '/api/v1'  // Use relative URL in production
+  : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 // Use the Next.js API routes for frontend requests - no need to include /api/v1 since it's in the rewrite rule
 export const FRONTEND_API_BASE_URL = '';
@@ -43,7 +45,7 @@ export const downloadVideo = async (sessionId: string): Promise<Blob> => {
   console.log(`Attempting to download file with session ID: ${sessionId}`);
   
   // Use direct backend URL to avoid routing issues
-  const fileUrl = `${API_BASE_URL}/file/${sessionId}`;
+  const fileUrl = `${API_URL}/file/${sessionId}`;
   console.log(`Downloading directly from backend: ${fileUrl}`);
   
   const response = await fetch(fileUrl, {
@@ -75,7 +77,7 @@ export const downloadVideo = async (sessionId: string): Promise<Blob> => {
  */
 export const getDownloadStatus = async (sessionId: string): Promise<DownloadStatus> => {
   // Use the direct backend URL for status requests, just like we do for file downloads
-  const response = await fetch(`${API_BASE_URL}/status/${sessionId}`, {
+  const response = await fetch(`${API_URL}/status/${sessionId}`, {
     headers: getDefaultHeaders(),
   });
   
@@ -138,7 +140,7 @@ export const downloadVideoWithProgress = async (
   return new Promise(async (resolve, reject) => {
     try {
       // Use direct backend URL to avoid routing issues
-      const fileUrl = `${API_BASE_URL}/file/${sessionId}`;
+      const fileUrl = `${API_URL}/file/${sessionId}`;
       console.log(`Downloading with progress directly from backend: ${fileUrl}`);
       
       // First, get the status to get an estimated size (if available)

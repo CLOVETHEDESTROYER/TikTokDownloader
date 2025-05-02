@@ -105,13 +105,19 @@ RATE_LIMIT_HEADERS=X-Real-IP,X-Forwarded-For
 # Monitoring
 ENABLE_METRICS=true
 METRICS_PORT=9090
+
+# CORS Settings
+FRONTEND_URL=https://your-domain.com
+CORS_ALLOW_METHODS=["GET","POST","OPTIONS","PUT","DELETE"]
+CORS_ALLOW_HEADERS=Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control
+ADDITIONAL_ALLOWED_ORIGINS=https://your-other-domain.com
 ```
 
 ### Frontend (.env.local)
 
 ```
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=/api/v1
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
 NEXT_PUBLIC_WEBSITE_API_KEY=your-website-key
 ```
 
@@ -147,29 +153,80 @@ NEXT_PUBLIC_WEBSITE_API_KEY=your-website-key
 
 ### Deployment Steps
 
-1. Fork/clone the repository
-2. Configure environment variables in DigitalOcean dashboard
-3. Deploy using App Platform
-4. Set up SSL certificates
-5. Configure domain (if applicable)
+1. **Fork/clone the repository**
+2. **Configure environment variables in DigitalOcean dashboard**:
+   - Navigate to the App Platform section
+   - Create a new app from your GitHub repository
+   - Configure the required environment variables listed below
+3. **Deploy using App Platform**:
+   - Select the `Dockerfile` in the root directory for deployment
+   - Set the run command to `./start.sh`
+   - Configure HTTP routes to expose port 3000 for the web interface
+4. **Set up SSL certificates**:
+   - Enable SSL for your app
+   - Choose "Let's Encrypt" for automatic certificate management
+5. **Configure domain (if applicable)**:
+   - Add your custom domain in the Settings > Domains section
+   - Update the DNS records as instructed by DigitalOcean
 
-### Environment Variables
+### Environment Variables for DigitalOcean
 
 Required environment variables for production:
 
-- `API_SECRET_KEY`: API master key
-- `JWT_SECRET_KEY`: JWT signing key
-- `ADMIN_API_KEY`: Admin access key
-- `WEBSITE_API_KEY`: Website access key
+- `API_SECRET_KEY`: API master key (mark as Encrypted)
+- `JWT_SECRET_KEY`: JWT signing key (mark as Encrypted)
+- `ADMIN_API_KEY`: Admin access key (mark as Encrypted)
+- `WEBSITE_API_KEY`: Website access key (mark as Encrypted)
 - `NODE_ENV`: Set to 'production'
-- `NEXT_PUBLIC_API_URL`: Production API URL
-- `NEXT_PUBLIC_SITE_URL`: Production site URL
+- `NEXT_PUBLIC_API_URL`: Set to '/api/v1' for relative path
+- `NEXT_PUBLIC_SITE_URL`: Set to '${\_self.PUBLIC_URL}' to use the app's URL
+- `CORS_ALLOW_METHODS`: Set to '["GET","POST","OPTIONS","PUT","DELETE"]' (as a JSON array)
+- `FRONTEND_URL`: Set to '${\_self.PUBLIC_URL}' to use the app's URL
+- `REQUIRE_API_KEY`: Set to 'true'
 
 ### Monitoring
 
 - Access logs through DigitalOcean dashboard
 - Monitor resource usage and scaling
 - Set up alerts for critical events
+
+## Deployment Troubleshooting
+
+### Common Issues and Solutions
+
+1. **CORS Errors**:
+
+   - Ensure `CORS_ALLOW_METHODS` is formatted as a proper JSON array: `["GET","POST","OPTIONS","PUT","DELETE"]`
+   - Add your domain to `ADDITIONAL_ALLOWED_ORIGINS`
+   - Check browser console for specific CORS error messages
+
+2. **API Connection Issues**:
+
+   - Ensure `NEXT_PUBLIC_API_URL` is set to `/api/v1` (relative path) in production
+   - Verify API keys are correctly set and match between frontend and backend
+   - Check the route configuration in `.do/app.yaml` has the correct paths
+
+3. **File Permissions**:
+
+   - Make sure `start.sh` has executable permissions: `chmod +x start.sh`
+   - Ensure the downloads directory exists and is writable
+
+4. **Environment Variable Format**:
+
+   - For JSON array values like `CORS_ALLOW_METHODS`, use proper JSON syntax with quotes: `'["GET","POST"]'`
+   - For multi-line variables, use appropriate escaping or DigitalOcean's multi-line input
+
+5. **Container Startup Issues**:
+   - Check logs in DigitalOcean dashboard
+   - Verify that both frontend and backend services start correctly
+   - Test the health endpoint after deployment: `curl https://your-app-url/health`
+
+### Debugging Tools
+
+- Use the application logs in DigitalOcean dashboard
+- Check browser developer tools for frontend errors
+- Test API endpoints directly using curl or Postman
+- Verify environment variables are correctly set in the container
 
 ## API Endpoints
 
@@ -350,8 +407,12 @@ The application features a comprehensive progress tracking system:
 │   │   ├── pages/        # Next.js pages
 │   │   └── utils/        # Utility functions
 │   └── Dockerfile
+├── .do/                  # DigitalOcean configuration
+│   └── app.yaml          # App Platform config
 ├── downloads/            # Downloaded videos
 ├── docker-compose.yml    # Docker Compose config
+├── Dockerfile            # Combined deployment Dockerfile
+├── start.sh              # Startup script for combined deployment
 └── README.md
 ```
 

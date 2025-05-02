@@ -1,4 +1,5 @@
 import os
+import json
 from typing import List, Optional
 from pydantic import validator
 from pydantic_settings import BaseSettings
@@ -39,8 +40,22 @@ class Settings(BaseSettings):
         "ADDITIONAL_ALLOWED_ORIGINS", "")
     CORS_ALLOW_CREDENTIALS: bool = os.getenv(
         "CORS_ALLOW_CREDENTIALS", "true").lower() == "true"
-    CORS_ALLOW_METHODS: List[str] = os.getenv(
-        "CORS_ALLOW_METHODS", "GET,POST,OPTIONS").split(",")
+
+    # Properly parse CORS_ALLOW_METHODS as JSON if it's a JSON string, otherwise split by comma
+    @property
+    def CORS_ALLOW_METHODS(self) -> List[str]:
+        methods_value = os.getenv("CORS_ALLOW_METHODS", "GET,POST,OPTIONS")
+
+        if methods_value.startswith("[") and methods_value.endswith("]"):
+            # Try to parse as JSON
+            try:
+                return json.loads(methods_value)
+            except json.JSONDecodeError:
+                pass
+
+        # Fallback to comma-separated string
+        return methods_value.split(",")
+
     CORS_ALLOW_HEADERS: List[str] = os.getenv(
         "CORS_ALLOW_HEADERS",
         "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
@@ -67,6 +82,15 @@ class Settings(BaseSettings):
         if self.ADDITIONAL_ALLOWED_ORIGINS:
             origins.extend(
                 [o.strip() for o in self.ADDITIONAL_ALLOWED_ORIGINS.split(",") if o.strip()])
+
+        # For production, ensure the DigitalOcean domain is allowed
+        if self.ENV == "production":
+            origins.append("https://tiksave-7txrl.ondigitalocean.app")
+            # Add wildcard for all subdomains on digitalocean.app
+            origins.append("https://*.ondigitalocean.app")
+            # Add wildcard for custom domains if applicable
+            origins.append("https://tiktokwatermarkremover.com")
+            origins.append("https://www.tiktokwatermarkremover.com")
 
         # Remove duplicates and empty strings
         return list(set(origin for origin in origins if origin))

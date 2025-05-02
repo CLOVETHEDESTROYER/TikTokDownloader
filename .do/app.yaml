@@ -38,6 +38,15 @@ services:
         value: "10"
       - key: VERIFY_SSL
         value: "true"
+      # CORS settings
+      - key: FRONTEND_URL
+        value: "${_self.PUBLIC_URL}"
+      - key: CORS_ALLOW_METHODS
+        value: '["GET","POST","PUT","DELETE","OPTIONS"]'
+      - key: CORS_ALLOW_HEADERS
+        value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
+      - key: ADDITIONAL_ALLOWED_ORIGINS
+        value: "https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com"
 
   - name: web
     # Use the root directory and combined Dockerfile
@@ -81,13 +90,15 @@ services:
       - key: VERIFY_SSL
         value: "true"
 
-      # CORS settings - correctly named based on backend config
+      # CORS settings - correctly formatted for JSON parsing
       - key: FRONTEND_URL
         value: "${_self.PUBLIC_URL}"
       - key: CORS_ALLOW_METHODS
-        value: "GET,POST,PUT,DELETE,OPTIONS"
+        value: '["GET","POST","PUT","DELETE","OPTIONS"]'
       - key: CORS_ALLOW_HEADERS
         value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
+      - key: ADDITIONAL_ALLOWED_ORIGINS
+        value: "https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com"
 
       # Frontend Environment Variables
       - key: NODE_ENV

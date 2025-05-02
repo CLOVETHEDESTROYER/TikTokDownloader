@@ -8,8 +8,26 @@ interface HealthCheckResponse {
   env: string;
 }
 
-// Use a more direct approach for API URL
-const API_URL = 'http://localhost:8000/api/v1';
+// Use environment variables for API URL or fallback to relative path in production
+const getApiUrl = () => {
+  // In production, use relative URLs to work with the proxy setup
+  if (process.env.NODE_ENV === 'production') {
+    return '/api/v1';
+  }
+  // In development, use the environment variable or fallback to localhost
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+};
+
+const getHealthUrl = () => {
+  // In production, use relative URLs to work with the proxy setup
+  if (process.env.NODE_ENV === 'production') {
+    return '/health';
+  }
+  // In development, use the base URL without /api/v1
+  return process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+};
+
+const API_URL = getApiUrl();
 
 console.log('API URL configured as:', API_URL);
 
@@ -34,6 +52,7 @@ export async function createDownload(url: string, platform: string, quality: str
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || '',
     },
     body: JSON.stringify({
       url,
@@ -46,7 +65,8 @@ export async function createDownload(url: string, platform: string, quality: str
     try {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Failed to create download: ${response.status}`);
-    } catch (_) {
+    } catch (_error) {
+      // If parsing the error response fails, throw a generic error
       throw new Error(`Request failed with status ${response.status}`);
     }
   }
@@ -58,13 +78,18 @@ export async function createDownload(url: string, platform: string, quality: str
  * Get the current status of a download
  */
 export async function getDownloadStatus(sessionId: string): Promise<DownloadStatus> {
-  const response = await fetch(`${API_URL}/status/${sessionId}`);
+  const response = await fetch(`${API_URL}/status/${sessionId}`, {
+    headers: {
+      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || '',
+    }
+  });
   
   if (!response.ok) {
     try {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Failed to get status: ${response.status}`);
-    } catch (_) {
+    } catch (_error) {
+      // If parsing the error response fails, throw a generic error
       throw new Error(`Request failed with status ${response.status}`);
     }
   }
@@ -80,6 +105,7 @@ export async function downloadVideo(sessionId: string): Promise<Blob> {
     method: 'GET',
     headers: {
       'Accept': 'video/mp4',
+      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || '',
     },
   });
 
@@ -87,7 +113,8 @@ export async function downloadVideo(sessionId: string): Promise<Blob> {
     try {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Download failed with status ${response.status}`);
-    } catch (_) {
+    } catch (_error) {
+      // If parsing the error response fails, throw a generic error
       throw new Error(`Download failed with status ${response.status}`);
     }
   }
@@ -101,7 +128,7 @@ export async function downloadVideo(sessionId: string): Promise<Blob> {
 export async function checkApiHealth(): Promise<HealthCheckResponse> {
   try {
     // Use the base URL without /api/v1 for health check
-    const healthUrl = 'http://localhost:8000/health';
+    const healthUrl = getHealthUrl() + '/health';
     console.log('Checking API health at:', healthUrl);
     const response = await fetch(healthUrl);
     if (!response.ok) {
