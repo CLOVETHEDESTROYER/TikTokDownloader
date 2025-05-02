@@ -18,20 +18,16 @@ services:
         value: "production"
       - key: API_SECRET_KEY
         type: SECRET
-        value: "your-secret-key-here"
       - key: JWT_SECRET_KEY
         type: SECRET
-        value: "your-jwt-secret-here"
       - key: ADMIN_API_KEY
         type: SECRET
-        value: "your-admin-key-here"
       - key: WEBSITE_API_KEY
         type: SECRET
-        value: "your-website-key-here"
       - key: API_KEY_HEADER_NAME
         value: "X-API-Key"
       - key: REQUIRE_API_KEY
-        value: "true"
+        value: "false"
       - key: MAX_DOWNLOADS
         value: "50"
       - key: MAX_CONCURRENT_DOWNLOADS
@@ -44,9 +40,13 @@ services:
       - key: CORS_ALLOW_METHODS
         value: '["GET","POST","PUT","DELETE","OPTIONS"]'
       - key: CORS_ALLOW_HEADERS
-        value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
+        value: '["Content-Type","Authorization","X-Request-ID","X-API-Key","Accept","Origin","Cache-Control"]'
       - key: ADDITIONAL_ALLOWED_ORIGINS
         value: "https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com"
+      - key: CORS_MAX_AGE
+        value: "3600"
+      - key: CORS_ALLOW_CREDENTIALS
+        value: "true"
 
   - name: web
     # Use the root directory and combined Dockerfile
@@ -128,5 +128,11 @@ services:
         port: 8000
         preserve_path_prefix: true
       - path: /health
+        port: 8000
+        preserve_path_prefix: false
+      - path: /docs
+        port: 8000
+        preserve_path_prefix: false
+      - path: /openapi.json
         port: 8000
         preserve_path_prefix: false
