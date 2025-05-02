@@ -8,23 +8,23 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build backend with frontend
-FROM node:18-alpine
+FROM python:3.11-slim
 WORKDIR /app
 
-# Install Python and dependencies
-RUN apk add --no-cache python3 py3-pip ffmpeg
+# Install Node.js and other dependencies
+RUN apt-get update && apt-get install -y \
+    nodejs \
+    npm \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
-# Fix for externally managed environment
-ENV PIP_BREAK_SYSTEM_PACKAGES=1
+# Copy start script first so we can verify it exists
+COPY start.sh ./
+RUN chmod +x ./start.sh && ls -la ./start.sh
 
 # Install Python dependencies
-COPY backend/requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
-
-# Alternatively, create and use a virtual environment
-# RUN python3 -m venv /venv
-# ENV PATH="/venv/bin:$PATH"
-# RUN pip3 install --no-cache-dir -r requirements.txt
+COPY backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend code
 COPY backend/ ./backend/
@@ -37,10 +37,6 @@ COPY --from=frontend-build /app/node_modules ./frontend/node_modules
 
 # Create necessary directories
 RUN mkdir -p downloads logs
-
-# Copy start script
-COPY start.sh .
-RUN chmod +x start.sh
 
 # Expose ports
 EXPOSE 3000 8000
