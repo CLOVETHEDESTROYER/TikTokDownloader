@@ -19,11 +19,11 @@ const getApiUrl = () => {
 };
 
 const getHealthUrl = () => {
-  // In production, use relative URLs to work with the proxy setup
+  // In production, just return empty string (base path)
   if (process.env.NODE_ENV === 'production') {
-    return '/health';
+    return '';
   }
-  // In development, use the base URL without /api/v1
+  // In development, use the base URL
   return process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
 };
 
@@ -46,9 +46,11 @@ export interface DownloadStatus {
  * Create a download for a video URL
  */
 export async function createDownload(url: string, platform: string, quality: string): Promise<DownloadStatus> {
-  console.log('Sending direct API request to:', `${API_URL}/download`);
+  // Use absolute path
+  const downloadUrl = '/api/v1/download';
+  console.log('Sending direct API request to:', downloadUrl);
   
-  const response = await fetch(`${API_URL}/download`, {
+  const response = await fetch(downloadUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -127,8 +129,8 @@ export async function downloadVideo(sessionId: string): Promise<Blob> {
  */
 export async function checkApiHealth(): Promise<HealthCheckResponse> {
   try {
-    // Use the base URL without /api/v1 for health check
-    const healthUrl = getHealthUrl() + '/health';
+    // Don't append /health to getHealthUrl() if it already returns /health
+    const healthUrl = '/health';  // Use absolute path directly
     console.log('Checking API health at:', healthUrl);
     const response = await fetch(healthUrl);
     if (!response.ok) {

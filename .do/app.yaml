@@ -127,3 +127,6 @@ services:
       - path: /api
         port: 8000
         preserve_path_prefix: true
+      - path: /health
+        port: 8000
+        preserve_path_prefix: false
