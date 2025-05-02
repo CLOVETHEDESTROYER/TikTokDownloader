@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { API_BASE_URL, FRONTEND_API_BASE_URL } from '../utils/api';
+import { API_URL, FRONTEND_API_BASE_URL } from '../utils/api';
 import { checkApiHealth } from '../utils/apiDirect';
 
 interface DebugInfo {
@@ -16,7 +16,7 @@ interface DebugInfo {
 
 export default function ApiDebugger() {
   const [debugInfo, setDebugInfo] = useState<DebugInfo>({
-    API_BASE_URL,
+    API_BASE_URL: API_URL,
     FRONTEND_API_BASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,

@@ -10,23 +10,36 @@ interface HealthCheckResponse {
 
 // Use environment variables for API URL or fallback to relative path in production
 const getApiUrl = () => {
-  // Use window.location to construct base URL if needed
-  const baseUrl = window.location.origin;
-  console.log(`Base URL from window.location.origin: ${baseUrl}`);
-  return `${baseUrl}/api/v1`;
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    // We're in the browser
+    const baseUrl = window.location.origin;
+    console.log(`Base URL from window.location.origin: ${baseUrl}`);
+    return `${baseUrl}/api/v1`;
+  } else {
+    // We're on the server
+    return process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+  }
 };
 
 const getHealthUrl = () => {
-  return window.location.origin + '/health';
+  if (typeof window !== 'undefined') {
+    return window.location.origin + '/health';
+  } else {
+    // Use a relative URL on the server
+    return '/health';
+  }
 };
 
-// Log all these values on initialization
-console.log('API URL: ' + getApiUrl());
-console.log('Health URL: ' + getHealthUrl());
+// Initialize these safely (handle both SSR and client)
+const API_URL = typeof window !== 'undefined' ? getApiUrl() : '/api/v1';
 
-const API_URL = getApiUrl();
-
-console.log('API URL configured as:', API_URL);
+// Only log these values on the client
+if (typeof window !== 'undefined') {
+  console.log('API URL: ' + getApiUrl());
+  console.log('Health URL: ' + getHealthUrl());
+  console.log('API URL configured as:', API_URL);
+}
 
 // Download status interface matching the backend model
 export interface DownloadStatus {
