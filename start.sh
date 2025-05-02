@@ -6,20 +6,14 @@ echo "Starting TikTok Downloader..."
 echo "Current directory: $(pwd)"
 echo "Files in current directory: $(ls -la)"
 
-# Create necessary directories if they don't exist
+# Create necessary directories
 mkdir -p downloads logs
 
-# Set default API URL if not provided
-if [ -z "$NEXT_PUBLIC_API_URL" ]; then
-  export NEXT_PUBLIC_API_URL="/api/v1"
-  echo "Setting default NEXT_PUBLIC_API_URL: $NEXT_PUBLIC_API_URL"
+# Make sure environment variables are set
+if [ -z "$PORT" ]; then
+  export PORT=8000
+  echo "Setting default PORT: $PORT"
 fi
-
-# Print environment variables for debugging (without sensitive values)
-echo "Environment: $ENV"
-echo "Frontend URL: $FRONTEND_URL"
-echo "API key required: $REQUIRE_API_KEY"
-echo "CORS settings configured"
 
 # Start the backend service
 cd /app
@@ -32,10 +26,13 @@ echo "Backend started with PID: $BACKEND_PID"
 sleep 5
 if ! kill -0 $BACKEND_PID 2>/dev/null; then
   echo "ERROR: Backend failed to start properly"
-  # Check logs
-  tail -n 20 logs/*
   exit 1
 fi
+
+# Verify the backend is responding to health checks
+echo "Testing backend health check..."
+HEALTH_CHECK=$(curl -s http://localhost:8000/health)
+echo "Health check response: $HEALTH_CHECK"
 
 # Start the frontend service
 cd /app/frontend
@@ -44,15 +41,6 @@ export PORT=3000
 npm start &
 FRONTEND_PID=$!
 echo "Frontend started with PID: $FRONTEND_PID"
-
-# Verify frontend is running
-sleep 5
-if ! kill -0 $FRONTEND_PID 2>/dev/null; then
-  echo "ERROR: Frontend failed to start properly"
-  # Kill backend
-  kill -TERM $BACKEND_PID 2>/dev/null
-  exit 1
-fi
 
 # Handle graceful shutdown
 terminate() {

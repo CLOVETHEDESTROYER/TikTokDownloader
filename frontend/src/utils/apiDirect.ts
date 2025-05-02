@@ -10,22 +10,19 @@ interface HealthCheckResponse {
 
 // Use environment variables for API URL or fallback to relative path in production
 const getApiUrl = () => {
-  // In production, use relative URLs to work with the proxy setup
-  if (process.env.NODE_ENV === 'production') {
-    return '/api/v1';
-  }
-  // In development, use the environment variable or fallback to localhost
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+  // Use window.location to construct base URL if needed
+  const baseUrl = window.location.origin;
+  console.log(`Base URL from window.location.origin: ${baseUrl}`);
+  return `${baseUrl}/api/v1`;
 };
 
 const getHealthUrl = () => {
-  // In production, just return empty string (base path)
-  if (process.env.NODE_ENV === 'production') {
-    return '';
-  }
-  // In development, use the base URL
-  return process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+  return window.location.origin + '/health';
 };
+
+// Log all these values on initialization
+console.log('API URL: ' + getApiUrl());
+console.log('Health URL: ' + getHealthUrl());
 
 const API_URL = getApiUrl();
 
