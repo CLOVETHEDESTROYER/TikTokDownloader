@@ -56,10 +56,23 @@ class Settings(BaseSettings):
         # Fallback to comma-separated string
         return methods_value.split(",")
 
-    CORS_ALLOW_HEADERS: List[str] = os.getenv(
-        "CORS_ALLOW_HEADERS",
-        "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
-    ).split(",")
+    @property
+    def CORS_ALLOW_HEADERS(self) -> List[str]:
+        headers_value = os.getenv(
+            "CORS_ALLOW_HEADERS",
+            "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
+        )
+
+        if headers_value.startswith("[") and headers_value.endswith("]"):
+            # Try to parse as JSON
+            try:
+                return json.loads(headers_value)
+            except json.JSONDecodeError:
+                pass
+
+        # Fallback to comma-separated string
+        return headers_value.split(",")
+
     CORS_EXPOSE_HEADERS: List[str] = os.getenv(
         "CORS_EXPOSE_HEADERS", "X-Request-ID").split(",")
     CORS_MAX_AGE: int = int(os.getenv("CORS_MAX_AGE", "3600"))
