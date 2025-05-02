@@ -14,9 +14,17 @@ WORKDIR /app
 # Install Python and dependencies
 RUN apk add --no-cache python3 py3-pip ffmpeg
 
+# Fix for externally managed environment
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
 # Install Python dependencies
 COPY backend/requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Alternatively, create and use a virtual environment
+# RUN python3 -m venv /venv
+# ENV PATH="/venv/bin:$PATH"
+# RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy backend code
 COPY backend/ ./backend/
