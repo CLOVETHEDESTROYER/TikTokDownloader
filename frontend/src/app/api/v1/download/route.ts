@@ -6,8 +6,12 @@ export async function POST(request: NextRequest) {
     // Get request body
     const body = await request.json();
     
-    // Forward the request to the backend API using direct URL
-    const backendUrl = 'http://localhost:8000/api/v1/download';
+    // Get backend URL from environment or use default for development
+    const apiBase = process.env.NODE_ENV === 'production'
+      ? 'http://localhost:8000'
+      : process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+    
+    const backendUrl = `${apiBase}/api/v1/download`;
     console.log('Forwarding download request to:', backendUrl);
     
     const headers: HeadersInit = {

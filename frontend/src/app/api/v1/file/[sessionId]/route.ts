@@ -5,9 +5,12 @@ export async function GET(request: NextRequest, context: { params: { sessionId: 
   try {
     const sessionId = context.params.sessionId;
 
-    // Forward the request to the backend API using the correct path
-    const backendUrl = `http://localhost:8000/api/v1/file/${sessionId}`;
-
+    // Get backend URL from environment or use default for development
+    const apiBase = process.env.NODE_ENV === 'production'
+      ? 'http://localhost:8000'
+      : process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+    
+    const backendUrl = `${apiBase}/api/v1/file/${sessionId}`;
     console.log(`Proxying file download request to: ${backendUrl}`);
 
     const headers: HeadersInit = {

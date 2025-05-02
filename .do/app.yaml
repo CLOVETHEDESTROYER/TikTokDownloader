@@ -40,25 +40,69 @@ services:
         value: "true"
 
   - name: web
-    source_dir: frontend
-    build_command: npm install && NEXT_TELEMETRY_DISABLED=1 npx next build --no-lint
-    run_command: npm start
+    # Use the root directory and combined Dockerfile
+    dockerfile_path: Dockerfile
     github:
       branch: main
       deploy_on_push: true
+    # Health check on the frontend port
+    health_check:
+      http_path: /health
+      port: 3000
+    # Single instance configuration
     instance_count: 1
-    instance_size_slug: basic-xxs
+    instance_size_slug: basic-s
+    # Combined environment variables
     envs:
+      # Backend Environment Variables
       - key: PORT
-        value: "3000"
+        value: "8000"
+      - key: ENV
+        value: "production"
+      - key: API_SECRET_KEY
+        type: SECRET
+      - key: JWT_SECRET_KEY
+        type: SECRET
+      - key: ADMIN_API_KEY
+        type: SECRET
+      - key: WEBSITE_API_KEY
+        type: SECRET
+      - key: API_KEY_HEADER_NAME
+        value: "X-API-Key"
+      - key: REQUIRE_API_KEY
+        value: "true"
+      - key: MAX_DOWNLOADS
+        value: "50"
+      - key: MAX_CONCURRENT_DOWNLOADS
+        value: "10"
+      - key: VERIFY_SSL
+        value: "true"
+      - key: CORS_ORIGINS
+        value: "${_self.PUBLIC_URL}"
+      - key: CORS_METHODS
+        value: "GET,POST,PUT,DELETE,OPTIONS"
+      - key: CORS_HEADERS
+        value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
+
+      # Frontend Environment Variables
       - key: NODE_ENV
         value: "production"
       - key: NEXT_PUBLIC_API_URL
-        value: "https://tiksave-wk4wf.ondigitalocean.app/api/v1"
+        value: "/api/v1"
       - key: NEXT_PUBLIC_SITE_URL
-        value: "${_self.APP_URL}"
+        value: "${_self.PUBLIC_URL}"
       - key: NEXT_PUBLIC_WEBSITE_API_KEY
-        type: SECRET
-        value: "your-website-key-here"
+        scope: RUN_TIME
+        value: "${WEBSITE_API_KEY}"
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
+
+    # Route configuration
+    routes:
+      - path: /
+        preserve_path_prefix: false
+      - path: /api
+        preserve_path_prefix: true
+
+    # HTTP port configuration
+    http_port: 3000
