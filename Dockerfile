@@ -8,17 +8,15 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build backend with frontend
-FROM python:3.11-slim AS final
+FROM node:18-alpine
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+# Install Python and dependencies
+RUN apk add --no-cache python3 py3-pip ffmpeg
 
 # Install Python dependencies
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy backend code
 COPY backend/ ./backend/

@@ -15,6 +15,16 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from starlette.responses import Response
+import logging
+import time
+import json
+from .core.logging_config import setup_logging
+from .core.exceptions import DownloaderException
+from pydantic import BaseModel
+
+# Set up logging
+setup_logging()
+logger = logging.getLogger("app")
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -29,6 +39,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Debug log the configuration
+logger.info(f"Starting application in {settings.ENV} mode")
+logger.info(f"CORS ALLOW METHODS: {settings.CORS_ALLOW_METHODS}")
+logger.info(f"CORS ALLOW HEADERS: {settings.CORS_ALLOW_HEADERS}")
+logger.info(f"FRONTEND URL: {settings.FRONTEND_URL}")
+logger.info(f"ALLOWED ORIGINS: {settings.ALLOWED_ORIGINS}")
+logger.info(f"API KEY REQUIRED: {settings.REQUIRE_API_KEY}")
+
 # Add rate limiter to the app
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -37,9 +55,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
+    allow_methods=settings.CORS_ALLOW_METHODS,
+    allow_headers=settings.CORS_ALLOW_HEADERS,
+    expose_headers=settings.CORS_EXPOSE_HEADERS,
+    max_age=settings.CORS_MAX_AGE,
 )
 
 # Create downloads directory if it doesn't exist

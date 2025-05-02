@@ -45,10 +45,13 @@ services:
     github:
       branch: main
       deploy_on_push: true
+    # Run command for the application
+    run_command: ./start.sh
     # Health check on the frontend port
     health_check:
       http_path: /health
       port: 3000
+      initial_delay_seconds: 30
     # Single instance configuration
     instance_count: 1
     instance_size_slug: basic-s
@@ -77,11 +80,13 @@ services:
         value: "10"
       - key: VERIFY_SSL
         value: "true"
-      - key: CORS_ORIGINS
+
+      # CORS settings - correctly named based on backend config
+      - key: FRONTEND_URL
         value: "${_self.PUBLIC_URL}"
-      - key: CORS_METHODS
+      - key: CORS_ALLOW_METHODS
         value: "GET,POST,PUT,DELETE,OPTIONS"
-      - key: CORS_HEADERS
+      - key: CORS_ALLOW_HEADERS
         value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
 
       # Frontend Environment Variables
@@ -97,12 +102,17 @@ services:
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
 
+    # Network configuration
+    http_port: 3000
+    internal_ports:
+      - port: 8000
+        protocol: http
+
     # Route configuration
     routes:
       - path: /
+        port: 3000
         preserve_path_prefix: false
       - path: /api
+        port: 8000
         preserve_path_prefix: true
-
-    # HTTP port configuration
-    http_port: 3000
