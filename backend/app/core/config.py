@@ -145,6 +145,10 @@ class Settings(BaseSettings):
     # Redis (if needed)
     REDIS_URL: Optional[str] = os.getenv("REDIS_URL")
 
+    @property
+    def CORS_MAX_AGE(self) -> int:
+        return int(os.getenv("CORS_MAX_AGE", "3600"))
+
     class Config:
         env_file = ".env"
         case_sensitive = True
