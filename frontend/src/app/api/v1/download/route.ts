@@ -6,17 +6,13 @@ export async function POST(request: NextRequest) {
     // Get request body
     const body = await request.json();
     
-    // Determine if we're running on the server or client
+    // Use the public domain for server-side fetches
     const isServer = typeof window === 'undefined';
-
-    // Build the backend URL
     let backendUrl: string;
 
     if (isServer) {
-      // On the server, use the full URL (from env or fallback)
-      // DigitalOcean: NEXT_PUBLIC_API_URL should be set to /api/v1
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      backendUrl = apiBase.endsWith('/download') ? apiBase : `${apiBase}/download`;
+      // Use your public domain (DigitalOcean will route this correctly)
+      backendUrl = 'https://tiktokwatermarkremover.com/api/v1/download';
     } else {
       // On the client, use a relative path
       backendUrl = '/api/v1/download';
