@@ -38,9 +38,9 @@ services:
       - key: FRONTEND_URL
         value: "${_self.PUBLIC_URL}"
       - key: CORS_ALLOW_METHODS
-        value: '["GET","POST","PUT","DELETE","OPTIONS"]'
+        value: "GET,POST,PUT,DELETE,OPTIONS"
       - key: CORS_ALLOW_HEADERS
-        value: '["Content-Type","Authorization","X-Request-ID","X-API-Key","Accept","Origin","Cache-Control"]'
+        value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
       - key: ADDITIONAL_ALLOWED_ORIGINS
         value: "https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com"
       - key: CORS_MAX_AGE
@@ -49,22 +49,17 @@ services:
         value: "true"
 
   - name: web
-    # Use the root directory and combined Dockerfile
     dockerfile_path: Dockerfile
     github:
       branch: main
       deploy_on_push: true
-    # Run command for the application
     run_command: ./start.sh
-    # Health check on the frontend port
     health_check:
       http_path: /health
       port: 3000
       initial_delay_seconds: 30
-    # Single instance configuration
     instance_count: 1
     instance_size_slug: basic-s
-    # Combined environment variables
     envs:
       # Backend Environment Variables
       - key: PORT
@@ -89,17 +84,15 @@ services:
         value: "10"
       - key: VERIFY_SSL
         value: "true"
-
-      # CORS settings - correctly formatted for JSON parsing
+      # CORS settings
       - key: FRONTEND_URL
         value: "${_self.PUBLIC_URL}"
       - key: CORS_ALLOW_METHODS
-        value: '["GET","POST","PUT","DELETE","OPTIONS"]'
+        value: "GET,POST,PUT,DELETE,OPTIONS"
       - key: CORS_ALLOW_HEADERS
         value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
       - key: ADDITIONAL_ALLOWED_ORIGINS
         value: "https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com"
-
       # Frontend Environment Variables
       - key: NODE_ENV
         value: "production"
@@ -112,27 +105,24 @@ services:
         value: "${WEBSITE_API_KEY}"
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
-
-    # Network configuration
     http_port: 3000
     internal_ports:
       - port: 8000
         protocol: http
 
-    # Route configuration
-    routes:
-      - path: /
-        port: 3000
-        preserve_path_prefix: false
-      - path: /api
-        port: 8000
-        preserve_path_prefix: true
-      - path: /health
-        port: 8000
-        preserve_path_prefix: false
-      - path: /docs
-        port: 8000
-        preserve_path_prefix: false
-      - path: /openapi.json
-        port: 8000
-        preserve_path_prefix: false
+routes:
+  - path: /
+    component: web
+    preserve_path_prefix: false
+  - path: /api
+    component: api
+    preserve_path_prefix: true
+  - path: /health
+    component: api
+    preserve_path_prefix: false
+  - path: /docs
+    component: api
+    preserve_path_prefix: false
+  - path: /openapi.json
+    component: api
+    preserve_path_prefix: false

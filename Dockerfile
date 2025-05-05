@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
     ffmpeg \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy start script first so we can verify it exists
