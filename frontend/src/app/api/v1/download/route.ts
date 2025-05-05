@@ -11,8 +11,8 @@ export async function POST(request: NextRequest) {
     let backendUrl: string;
 
     if (isServer) {
-      // Use your public domain (DigitalOcean will route this correctly)
-      backendUrl = 'https://tiktokwatermarkremover.com/api/v1/download';
+      // Use internal networking for server-side fetches
+      backendUrl = 'http://localhost:8000/api/v1/download';
     } else {
       // On the client, use a relative path
       backendUrl = '/api/v1/download';
