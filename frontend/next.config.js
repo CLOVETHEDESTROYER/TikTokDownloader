@@ -16,15 +16,20 @@ const nextConfig = {
   },
   // Add API route rewrites
   async rewrites() {
+    const isDev = process.env.NODE_ENV !== 'production';
     return [
       {
         source: '/api/:path*',
-        destination: '/api/:path*',  // This should proxy to the backend
+        destination: isDev
+          ? 'http://localhost:8000/api/:path*' // Proxy to backend in dev
+          : '/api/:path*', // In production, let DO App Platform route
       },
       {
         source: '/health',
-        destination: '/health',
-      }
+        destination: isDev
+          ? 'http://localhost:8000/health'
+          : '/health',
+      },
     ];
   },
   // Add other configurations as needed
