@@ -26,10 +26,10 @@ htmlcov/
 .nox/
 .hypothesis/
 venv/
-ENV/
-env/
-env.bak/
-venv.bak/
+#ENV/
+#env/
+#env.bak/
+#venv.bak/
 
 # Node/Frontend
 node_modules/
@@ -79,6 +79,6 @@ downloads/
 tmp/
 
 # Environment variables
-.env
-.env.*
+#.env
+#.env.*
 !.env.example 

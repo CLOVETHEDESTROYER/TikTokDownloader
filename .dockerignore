@@ -8,8 +8,8 @@ node_modules
 venv
 __pycache__
 *.pyc
-.env
-.env.local
+# .env
+# .env.local
 
 # Build outputs
 frontend/.next

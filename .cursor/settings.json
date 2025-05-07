@@ -1,0 +1,9 @@
+{
+  "ignorePatterns": {
+    "excludeFromIgnore": [
+      ".env",
+      ".env.*",
+      "*.env"
+    ]
+  }
+} 
