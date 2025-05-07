@@ -34,11 +34,19 @@ services:
         value: "10"
       - key: VERIFY_SSL
         value: "true"
+      - key: DOWNLOAD_FOLDER
+        value: "/var/www/downloads"
+      - key: DOWNLOAD_EXPIRY_HOURS
+        value: "24"
+      - key: ALGORITHM
+        value: "HS256"
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
       # CORS settings
       - key: FRONTEND_URL
         value: "${_self.PUBLIC_URL}"
       - key: CORS_ALLOW_METHODS
-        value: "GET,POST,PUT,DELETE,OPTIONS"
+        value: '["GET","POST","PUT","DELETE","OPTIONS"]'
       - key: CORS_ALLOW_HEADERS
         value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
       - key: ADDITIONAL_ALLOWED_ORIGINS
@@ -61,38 +69,6 @@ services:
     instance_count: 1
     instance_size_slug: basic-s
     envs:
-      # Backend Environment Variables
-      - key: PORT
-        value: "8000"
-      - key: ENV
-        value: "production"
-      - key: API_SECRET_KEY
-        type: SECRET
-      - key: JWT_SECRET_KEY
-        type: SECRET
-      - key: ADMIN_API_KEY
-        type: SECRET
-      - key: WEBSITE_API_KEY
-        type: SECRET
-      - key: API_KEY_HEADER_NAME
-        value: "X-API-Key"
-      - key: REQUIRE_API_KEY
-        value: "true"
-      - key: MAX_DOWNLOADS
-        value: "50"
-      - key: MAX_CONCURRENT_DOWNLOADS
-        value: "10"
-      - key: VERIFY_SSL
-        value: "true"
-      # CORS settings
-      - key: FRONTEND_URL
-        value: "${_self.PUBLIC_URL}"
-      - key: CORS_ALLOW_METHODS
-        value: "GET,POST,PUT,DELETE,OPTIONS"
-      - key: CORS_ALLOW_HEADERS
-        value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
-      - key: ADDITIONAL_ALLOWED_ORIGINS
-        value: "https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com"
       # Frontend Environment Variables
       - key: NODE_ENV
         value: "production"
@@ -106,14 +82,8 @@ services:
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
     http_port: 3000
-    internal_ports:
-      - port: 8000
-        protocol: http
 
 routes:
-  - path: /
-    component: web
-    preserve_path_prefix: false
   - path: /api
     component: api
     preserve_path_prefix: true
@@ -125,4 +95,7 @@ routes:
     preserve_path_prefix: false
   - path: /openapi.json
     component: api
+    preserve_path_prefix: false
+  - path: /
+    component: web
     preserve_path_prefix: false
