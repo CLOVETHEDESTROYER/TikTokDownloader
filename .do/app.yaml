@@ -12,49 +12,105 @@ services:
     instance_count: 1
     instance_size_slug: basic-xxs
     envs:
+      # Environment
       - key: PORT
         value: "8000"
       - key: ENV
         value: "production"
+      - key: DEBUG
+        value: "false"
+
+      # Security Keys (as secrets)
       - key: API_SECRET_KEY
         type: SECRET
+        scope: RUN_TIME
       - key: JWT_SECRET_KEY
         type: SECRET
-      - key: ADMIN_API_KEY
-        type: SECRET
+        scope: RUN_TIME
       - key: WEBSITE_API_KEY
         type: SECRET
+        scope: RUN_TIME
+      - key: ADMIN_API_KEY
+        type: SECRET
+        scope: RUN_TIME
+
+      # API Security
       - key: API_KEY_HEADER_NAME
         value: "X-API-Key"
       - key: REQUIRE_API_KEY
-        value: "false"
-      - key: MAX_DOWNLOADS
-        value: "50"
-      - key: MAX_CONCURRENT_DOWNLOADS
-        value: "10"
-      - key: VERIFY_SSL
         value: "true"
-      - key: DOWNLOAD_FOLDER
-        value: "/var/www/downloads"
-      - key: DOWNLOAD_EXPIRY_HOURS
-        value: "24"
       - key: ALGORITHM
         value: "HS256"
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "30"
+
+      # Server Settings
+      - key: HOST
+        value: "0.0.0.0"
+      - key: WORKERS
+        value: "4"
+
+      # Download Settings
+      - key: DOWNLOAD_FOLDER
+        value: "/var/www/downloads"
+      - key: MAX_DOWNLOADS
+        value: "50"
+      - key: MAX_CONCURRENT_DOWNLOADS
+        value: "10"
+      - key: DOWNLOAD_EXPIRY_HOURS
+        value: "24"
+      - key: DOWNLOAD_EXPIRY_MINUTES
+        value: "5"
+      - key: VERIFY_SSL
+        value: "true"
+
+      # Rate Limiting
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "60"
+      - key: RATE_LIMIT_PER_HOUR
+        value: "1000"
+      - key: TRUSTED_PROXIES
+        value: "127.0.0.1,10.0.0.0/8"
+      - key: RATE_LIMIT_HEADERS
+        value: "X-Real-IP,X-Forwarded-For"
+
       # CORS settings
       - key: FRONTEND_URL
-        value: "${_self.PUBLIC_URL}"
+        value: "https://tiktokwatermarkremover.com"
       - key: CORS_ALLOW_METHODS
         value: '["GET","POST","PUT","DELETE","OPTIONS"]'
       - key: CORS_ALLOW_HEADERS
         value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
       - key: ADDITIONAL_ALLOWED_ORIGINS
-        value: "https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com"
+        value: "https://www.tiktokwatermarkremover.com"
       - key: CORS_MAX_AGE
         value: "3600"
       - key: CORS_ALLOW_CREDENTIALS
         value: "true"
+      - key: CORS_EXPOSE_HEADERS
+        value: "X-Request-ID"
+
+      # Instagram Settings
+      - key: INSTAGRAM_COOKIES_FILE
+        value: "/app/config/instagram_cookies.txt"
+      - key: INSTAGRAM_MAX_RETRIES
+        value: "3"
+      - key: INSTAGRAM_TIMEOUT
+        value: "30"
+      - key: CONFIG_DIR
+        value: "/app/config"
+
+      # API Routing
+      - key: BASE_PATH
+        value: "/api/v1"
+      - key: API_V1_PREFIX
+        value: "/api/v1"
+
+      # Monitoring
+      - key: ENABLE_METRICS
+        value: "true"
+      - key: METRICS_PORT
+        value: "9090"
 
   - name: web
     dockerfile_path: Dockerfile
@@ -75,7 +131,7 @@ services:
       - key: NEXT_PUBLIC_API_URL
         value: "/api/v1"
       - key: NEXT_PUBLIC_SITE_URL
-        value: "${_self.PUBLIC_URL}"
+        value: "https://tiktokwatermarkremover.com"
       - key: NEXT_PUBLIC_WEBSITE_API_KEY
         scope: RUN_TIME
         value: "${WEBSITE_API_KEY}"
