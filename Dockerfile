@@ -49,6 +49,7 @@ ENV HOST=0.0.0.0
 ENV PYTHONUNBUFFERED=1
 ENV NODE_ENV=production
 ENV PATH="/app/frontend/node_modules/.bin:${PATH}"
+ENV PYTHONPATH="/app/backend:${PYTHONPATH}"
 
 # Expose port
 EXPOSE 8000
