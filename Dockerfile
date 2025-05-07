@@ -9,13 +9,15 @@ RUN npm run build
 
 FROM python:3.11-slim
 
-# Install system dependencies
+# Install Node.js and system dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     curl \
     nginx \
     gcc \
     python3-dev \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up backend
@@ -42,6 +44,7 @@ ENV PORT=8000
 ENV HOST=0.0.0.0
 ENV PYTHONUNBUFFERED=1
 ENV NODE_ENV=production
+ENV PATH="/app/frontend/node_modules/.bin:${PATH}"
 
 # Expose port
 EXPOSE 8000
