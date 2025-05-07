@@ -4,7 +4,7 @@
  */
 
 // Production API URL - This should be the full URL to your backend API in production
-const PRODUCTION_API_URL = 'https://tiksave-wk4wf.ondigitalocean.app';
+const PRODUCTION_API_URL = '/api/v1';
 
 // Development API URL - Local development URL
 const DEVELOPMENT_API_URL = 'http://localhost:8000';
