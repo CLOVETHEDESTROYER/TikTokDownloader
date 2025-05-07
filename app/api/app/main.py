@@ -21,6 +21,10 @@ import json
 from .core.logging_config import setup_logging
 from .core.exceptions import DownloaderException
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Set up logging
 setup_logging()
@@ -177,7 +181,7 @@ async def api_key_middleware(request: Request, call_next):
 @limiter.limit("60/minute")
 async def health_check(request: Request):
     return {
-        "status": "healthy",
+        "status": "ok",
         "version": app.version,
         "env": settings.ENV
     }

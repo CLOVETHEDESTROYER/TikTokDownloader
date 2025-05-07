@@ -2,9 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies including ffmpeg
+# Install system dependencies including ffmpeg and curl for healthcheck
 RUN apt-get update && apt-get install -y \
     ffmpeg \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker cache
@@ -17,6 +18,7 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p downloads
 RUN mkdir -p logs
+RUN mkdir -p config
 
 # Set environment variables
 ENV PORT=8000
@@ -27,4 +29,4 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 # Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"] 

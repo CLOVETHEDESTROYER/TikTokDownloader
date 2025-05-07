@@ -1,46 +1,51 @@
-# Multi-stage build for TikTok Downloader app
-# Stage 1: Build frontend
-FROM node:18-alpine AS frontend-build
-WORKDIR /app
-COPY frontend/package*.json ./
+FROM node:18-alpine as frontend
+
+WORKDIR /app/frontend
+COPY app/web/package*.json ./
 RUN npm install
-COPY frontend/ ./
+
+COPY app/web/ .
 RUN npm run build
 
-# Stage 2: Build backend with frontend
 FROM python:3.11-slim
-WORKDIR /app
 
-# Install Node.js and other dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    nodejs \
-    npm \
     ffmpeg \
     curl \
+    nginx \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy start script first so we can verify it exists
-COPY start.sh ./
-RUN chmod +x ./start.sh && ls -la ./start.sh
-
-# Install Python dependencies
-COPY backend/requirements.txt ./
+# Set up backend
+WORKDIR /app/backend
+COPY app/api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code
-COPY backend/ ./backend/
-
-# Copy frontend build
-COPY --from=frontend-build /app/.next ./frontend/.next
-COPY --from=frontend-build /app/public ./frontend/public
-COPY --from=frontend-build /app/package.json ./frontend/
-COPY --from=frontend-build /app/node_modules ./frontend/node_modules
+# Copy backend files
+COPY app/api/ .
 
 # Create necessary directories
-RUN mkdir -p downloads logs
+RUN mkdir -p downloads logs config
 
-# Expose ports
-EXPOSE 3000 8000
+# Copy frontend build from previous stage
+COPY --from=frontend /app/frontend/.next/standalone /app/frontend
+COPY --from=frontend /app/frontend/.next/static /app/frontend/.next/static
+COPY --from=frontend /app/frontend/public /app/frontend/public
 
-# Start both services
-CMD ["./start.sh"] 
+# Set up Nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Environment variables
+ENV PORT=8000
+ENV HOST=0.0.0.0
+ENV PYTHONUNBUFFERED=1
+ENV NODE_ENV=production
+
+# Expose port
+EXPOSE 8000
+
+# Copy startup script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"] 

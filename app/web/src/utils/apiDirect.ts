@@ -56,19 +56,17 @@ export interface DownloadStatus {
  * Create a download for a video URL
  */
 export async function createDownload(url: string, platform: string, quality: string): Promise<DownloadStatus> {
-  // Use absolute path
-  const downloadUrl = '/api/v1/download';
+  // Use platform-specific endpoint
+  const downloadUrl = `${API_URL}/${platform}/download`;
   console.log('Sending direct API request to:', downloadUrl);
   
   const response = await fetch(downloadUrl, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || '',
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       url,
-      platform,
       quality,
     }),
   });
@@ -77,7 +75,7 @@ export async function createDownload(url: string, platform: string, quality: str
     try {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Failed to create download: ${response.status}`);
-    } catch (_error) {
+    } catch {
       // If parsing the error response fails, throw a generic error
       throw new Error(`Request failed with status ${response.status}`);
     }
@@ -90,9 +88,9 @@ export async function createDownload(url: string, platform: string, quality: str
  * Get the current status of a download
  */
 export async function getDownloadStatus(sessionId: string): Promise<DownloadStatus> {
-  const response = await fetch(`${API_URL}/status/${sessionId}`, {
+  const response = await fetch(`/api/v1/downloads/status/${sessionId}`, {
     headers: {
-      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || '',
+      'Content-Type': 'application/json'
     }
   });
   
@@ -100,7 +98,7 @@ export async function getDownloadStatus(sessionId: string): Promise<DownloadStat
     try {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Failed to get status: ${response.status}`);
-    } catch (_error) {
+    } catch {
       // If parsing the error response fails, throw a generic error
       throw new Error(`Request failed with status ${response.status}`);
     }
@@ -116,8 +114,7 @@ export async function downloadVideo(sessionId: string): Promise<Blob> {
   const response = await fetch(`${API_URL}/file/${sessionId}`, {
     method: 'GET',
     headers: {
-      'Accept': 'video/mp4',
-      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || '',
+      'Accept': 'video/mp4'
     },
   });
 
@@ -125,7 +122,7 @@ export async function downloadVideo(sessionId: string): Promise<Blob> {
     try {
       const errorData = await response.json();
       throw new Error(errorData.detail || `Download failed with status ${response.status}`);
-    } catch (_error) {
+    } catch {
       // If parsing the error response fails, throw a generic error
       throw new Error(`Download failed with status ${response.status}`);
     }
@@ -139,15 +136,16 @@ export async function downloadVideo(sessionId: string): Promise<Blob> {
  */
 export async function checkApiHealth(): Promise<HealthCheckResponse> {
   try {
-    // Don't append /health to getHealthUrl() if it already returns /health
-    const healthUrl = '/health';  // Use absolute path directly
-    console.log('Checking API health at:', healthUrl);
-    const response = await fetch(healthUrl);
+    const response = await fetch('/health');
     if (!response.ok) {
       throw new Error(`Health check failed with status ${response.status}`);
     }
-    return response.json();
-  } catch (error: unknown) {
+    const data = await response.json();
+    if (!data || typeof data.status !== 'string') {
+      throw new Error('Invalid health check response format');
+    }
+    return data;
+  } catch (error) {
     console.error('API Health Check Error:', error);
     throw error;
   }

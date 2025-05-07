@@ -11,8 +11,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     # API settings
-    API_SECRET_KEY: str = os.getenv(
-        "API_SECRET_KEY", "CHANGEME_IN_PRODUCTION!")
+    API_SECRET_KEY: str = os.getenv("API_SECRET_KEY", "your-secret-key")
     JWT_SECRET_KEY: str = os.getenv(
         "JWT_SECRET_KEY", "CHANGEME_IN_PRODUCTION!")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
@@ -21,7 +20,7 @@ class Settings(BaseSettings):
 
     # API Security settings
     API_KEY_HEADER_NAME: str = os.getenv("API_KEY_HEADER_NAME", "X-API-Key")
-    WEBSITE_API_KEY: Optional[str] = os.getenv("WEBSITE_API_KEY")
+    WEBSITE_API_KEY: str = os.getenv("WEBSITE_API_KEY", "your-website-key")
     REQUIRE_API_KEY: bool = os.getenv(
         "REQUIRE_API_KEY", "true").lower() in ("true", "1", "yes")
 
@@ -111,7 +110,7 @@ class Settings(BaseSettings):
     MAX_DOWNLOADS: int = int(os.getenv("MAX_DOWNLOADS", "10"))
     MAX_CONCURRENT_DOWNLOADS: int = int(
         os.getenv("MAX_CONCURRENT_DOWNLOADS", "5"))
-    DOWNLOAD_EXPIRY_HOURS: int = int(os.getenv("DOWNLOAD_EXPIRY_HOURS", "24"))
+    DOWNLOAD_EXPIRY_MINUTES: int = int(os.getenv("DOWNLOAD_EXPIRY_MINUTES", "60"))
 
     # Security settings
     VERIFY_SSL: bool = os.getenv(
@@ -124,6 +123,12 @@ class Settings(BaseSettings):
     INSTAGRAM_MAX_RETRIES: int = int(os.getenv("INSTAGRAM_MAX_RETRIES", "3"))
     INSTAGRAM_TIMEOUT: int = int(os.getenv("INSTAGRAM_TIMEOUT", "30"))
     CONFIG_DIR: str = os.getenv("CONFIG_DIR", "config")
+
+    # Rate Limiting
+    RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "60"))
+    
+    # Monitoring
+    ENABLE_METRICS: bool = os.getenv("ENABLE_METRICS", "false").lower() == "true"
 
     @validator("API_SECRET_KEY", "JWT_SECRET_KEY")
     def validate_secrets(cls, v, values, **kwargs):

@@ -1,77 +1,32 @@
 version: '3.8'
 
 services:
-  api:
+  backend:
     build:
-      context: ./backend
+      context: ./app/api
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    environment:
-      - PORT=8000
-      - ENV=${ENV:-development}
-      - API_SECRET_KEY=${API_SECRET_KEY}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - ADMIN_API_KEY=${ADMIN_API_KEY}
-      - WEBSITE_API_KEY=${WEBSITE_API_KEY}
-      - API_KEY_HEADER_NAME=X-API-Key
-      - REQUIRE_API_KEY=${REQUIRE_API_KEY:-false}
-      - MAX_DOWNLOADS=50
-      - MAX_CONCURRENT_DOWNLOADS=10
-      - VERIFY_SSL=${VERIFY_SSL:-false}
-      # CORS settings
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - CORS_ALLOW_METHODS=${CORS_ALLOW_METHODS:-["GET","POST","OPTIONS","PUT","DELETE"]}
-      - CORS_ALLOW_HEADERS=Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control
-      - ADDITIONAL_ALLOWED_ORIGINS=${ADDITIONAL_ALLOWED_ORIGINS:-}
     volumes:
-      - ./backend:/app
-      - ./downloads:/app/downloads
-      - ./logs:/app/logs
+      - downloads:/app/downloads
+    env_file:
+      - ./app/api/.env.production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  web:
+  frontend:
     build:
-      context: ./frontend
+      context: ./app/web
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    environment:
-      - PORT=3000
-      - NODE_ENV=${NODE_ENV:-development}
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
-      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
-      - NEXT_PUBLIC_WEBSITE_API_KEY=${WEBSITE_API_KEY}
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+    env_file:
+      - ./app/web/.env.production
     depends_on:
-      - api
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./nginx/ssl:/etc/nginx/ssl
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-      - downloads:/var/www/downloads
-    depends_on:
-      - api
-      - web
-    restart: unless-stopped
-
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    command: certonly --webroot -w /var/www/certbot --force-renewal --email HyperlabsNFT@gmail.com -d tiktokwatermarkremover.com -d www.tiktokwatermarkremover.com --agree-tos --non-interactive
-    depends_on:
-      - nginx
+      - backend
 
 volumes:
   downloads: 

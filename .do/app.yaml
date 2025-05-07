@@ -1,16 +1,17 @@
 name: tiktok-downloader
 services:
-  - name: api
-    source_dir: backend
-    dockerfile_path: Dockerfile
+  - name: web
+    dockerfile_path: Dockerfile # Using our combined Dockerfile
+    source_dir: . # Root directory
     github:
       branch: main
       deploy_on_push: true
     health_check:
       http_path: /health
       port: 8000
+      initial_delay_seconds: 30
     instance_count: 1
-    instance_size_slug: basic-xxs
+    instance_size_slug: basic-s
     envs:
       # Environment
       - key: PORT
@@ -19,6 +20,8 @@ services:
         value: "production"
       - key: DEBUG
         value: "false"
+      - key: NODE_ENV
+        value: "production"
 
       # Security Keys (as secrets)
       - key: API_SECRET_KEY
@@ -39,105 +42,29 @@ services:
         value: "X-API-Key"
       - key: REQUIRE_API_KEY
         value: "true"
-      - key: ALGORITHM
-        value: "HS256"
-      - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: "30"
-
-      # Server Settings
-      - key: HOST
-        value: "0.0.0.0"
-      - key: WORKERS
-        value: "4"
 
       # Download Settings
       - key: DOWNLOAD_FOLDER
-        value: "/var/www/downloads"
+        value: "/app/downloads"
       - key: MAX_DOWNLOADS
         value: "50"
       - key: MAX_CONCURRENT_DOWNLOADS
         value: "10"
-      - key: DOWNLOAD_EXPIRY_HOURS
-        value: "24"
       - key: DOWNLOAD_EXPIRY_MINUTES
-        value: "5"
+        value: "60"
       - key: VERIFY_SSL
         value: "true"
 
       # Rate Limiting
       - key: RATE_LIMIT_PER_MINUTE
         value: "60"
-      - key: RATE_LIMIT_PER_HOUR
-        value: "1000"
-      - key: TRUSTED_PROXIES
-        value: "127.0.0.1,10.0.0.0/8"
-      - key: RATE_LIMIT_HEADERS
-        value: "X-Real-IP,X-Forwarded-For"
 
-      # CORS settings
-      - key: FRONTEND_URL
-        value: "https://tiktokwatermarkremover.com"
-      - key: CORS_ALLOW_METHODS
-        value: '["GET","POST","PUT","DELETE","OPTIONS"]'
-      - key: CORS_ALLOW_HEADERS
-        value: "Content-Type,Authorization,X-Request-ID,X-API-Key,Accept,Origin,Cache-Control"
-      - key: ADDITIONAL_ALLOWED_ORIGINS
-        value: "https://www.tiktokwatermarkremover.com"
-      - key: CORS_MAX_AGE
-        value: "3600"
-      - key: CORS_ALLOW_CREDENTIALS
-        value: "true"
-      - key: CORS_EXPOSE_HEADERS
-        value: "X-Request-ID"
-
-      # Instagram Settings
-      - key: INSTAGRAM_COOKIES_FILE
-        value: "/app/config/instagram_cookies.txt"
-      - key: INSTAGRAM_MAX_RETRIES
-        value: "3"
-      - key: INSTAGRAM_TIMEOUT
-        value: "30"
-      - key: CONFIG_DIR
-        value: "/app/config"
-
-      # API Routing
-      - key: BASE_PATH
-        value: "/api/v1"
-      - key: API_V1_PREFIX
-        value: "/api/v1"
-
-      # Monitoring
-      - key: ENABLE_METRICS
-        value: "true"
-      - key: METRICS_PORT
-        value: "9090"
-
-  - name: web
-    dockerfile_path: Dockerfile
-    github:
-      branch: main
-      deploy_on_push: true
-    run_command: ./start.sh
-    health_check:
-      http_path: /health
-      port: 3000
-      initial_delay_seconds: 30
-    instance_count: 1
-    instance_size_slug: basic-s
-    envs:
-      # Frontend Environment Variables
-      - key: NODE_ENV
-        value: "production"
+      # Frontend Settings
       - key: NEXT_PUBLIC_API_URL
         value: "/api/v1"
-      - key: NEXT_PUBLIC_SITE_URL
-        value: "https://tiktokwatermarkremover.com"
       - key: NEXT_PUBLIC_WEBSITE_API_KEY
         scope: RUN_TIME
         value: "${WEBSITE_API_KEY}"
-      - key: NEXT_TELEMETRY_DISABLED
-        value: "1"
-    http_port: 3000
 
 routes:
   - path: /api
