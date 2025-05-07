@@ -8,12 +8,14 @@ import {
 import { TikTokVideoData } from '@/services/downloadService';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_KEY = process.env.NEXT_PUBLIC_WEBSITE_API_KEY;
 
 // Create an axios instance that we can use across the app
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'X-API-Key': API_KEY,
   },
 });
 
