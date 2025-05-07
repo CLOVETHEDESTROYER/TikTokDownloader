@@ -31,10 +31,14 @@ COPY app/api/ .
 # Create necessary directories
 RUN mkdir -p downloads logs config
 
+# Set up frontend directory structure
+RUN mkdir -p /app/frontend/.next/static
+RUN mkdir -p /app/frontend/public
+
 # Copy frontend build from previous stage
 COPY --from=frontend /app/frontend/.next/standalone/ /app/frontend/
-COPY --from=frontend /app/frontend/.next/static /app/frontend/.next/static
-COPY --from=frontend /app/frontend/public /app/frontend/public
+COPY --from=frontend /app/frontend/.next/static/ /app/frontend/.next/static/
+COPY --from=frontend /app/frontend/public/ /app/frontend/public/
 
 # Set up Nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
