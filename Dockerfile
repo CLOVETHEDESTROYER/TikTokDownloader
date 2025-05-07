@@ -32,7 +32,7 @@ COPY app/api/ .
 RUN mkdir -p downloads logs config
 
 # Copy frontend build from previous stage
-COPY --from=frontend /app/frontend/.next/standalone /app/frontend
+COPY --from=frontend /app/frontend/.next/standalone/ /app/frontend/
 COPY --from=frontend /app/frontend/.next/static /app/frontend/.next/static
 COPY --from=frontend /app/frontend/public /app/frontend/public
 
@@ -52,11 +52,6 @@ EXPOSE 8000
 # Copy startup script
 COPY start.sh /app/backend/start.sh
 RUN chmod +x /app/backend/start.sh
-
-# Create the correct directory structure for Next.js standalone
-RUN mkdir -p /app/frontend/standalone
-RUN mv /app/frontend/server.js /app/frontend/standalone/
-RUN mv /app/frontend/package.json /app/frontend/standalone/
 
 WORKDIR /app/backend
 CMD ["./start.sh"] 
