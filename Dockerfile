@@ -53,5 +53,10 @@ EXPOSE 8000
 COPY start.sh /app/backend/start.sh
 RUN chmod +x /app/backend/start.sh
 
+# Create the correct directory structure for Next.js standalone
+RUN mkdir -p /app/frontend/standalone
+RUN mv /app/frontend/server.js /app/frontend/standalone/
+RUN mv /app/frontend/package.json /app/frontend/standalone/
+
 WORKDIR /app/backend
 CMD ["./start.sh"] 
