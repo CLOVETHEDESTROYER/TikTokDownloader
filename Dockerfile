@@ -45,7 +45,8 @@ ENV NODE_ENV=production
 EXPOSE 8000
 
 # Copy startup script
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+COPY start.sh /app/backend/start.sh
+RUN chmod +x /app/backend/start.sh
 
-CMD ["/start.sh"] 
+WORKDIR /app/backend
+CMD ["./start.sh"] 
