@@ -16,24 +16,22 @@ const nextConfig = {
   },
   // Add API route rewrites
   async rewrites() {
-    const isDev = process.env.NODE_ENV !== 'production';
     return [
       {
         source: '/api/:path*',
-        destination: isDev
-          ? 'http://localhost:8000/api/:path*' // Proxy to backend in dev
-          : '/api/:path*', // In production, let DO App Platform route
+        destination: 'http://backend:8001/api/:path*',
       },
       {
         source: '/health',
-        destination: isDev
-          ? 'http://localhost:8000/health'
-          : '/health',
+        destination: 'http://backend:8001/health',
       },
     ];
   },
   // Add other configurations as needed
   output: 'standalone',
+  experimental: {
+    outputFileTracingRoot: undefined,
+  },
 };
 
 module.exports = nextConfig; 

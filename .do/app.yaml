@@ -1,27 +1,24 @@
 name: tiktok-downloader
 services:
-  - name: web
-    dockerfile_path: Dockerfile # Using our combined Dockerfile
-    source_dir: . # Root directory
+  - name: backend
+    dockerfile_path: app/api/Dockerfile
+    source_dir: .
     github:
       branch: main
       deploy_on_push: true
     health_check:
       http_path: /health
-      port: 8000
-      initial_delay_seconds: 30
+      port: 8001
     instance_count: 1
     instance_size_slug: basic-s
     envs:
       # Environment
       - key: PORT
-        value: "8000"
+        value: "8001"
       - key: ENV
         value: "production"
       - key: DEBUG
         value: "false"
-      - key: NODE_ENV
-        value: "production"
 
       # Security Keys (as secrets)
       - key: API_SECRET_KEY
@@ -59,26 +56,40 @@ services:
       - key: RATE_LIMIT_PER_MINUTE
         value: "60"
 
-      # Frontend Settings
+      # CORS Settings
+      - key: ALLOWED_ORIGINS
+        value: "https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com"
+
+  - name: frontend
+    dockerfile_path: app/web/Dockerfile
+    source_dir: .
+    github:
+      branch: main
+      deploy_on_push: true
+    instance_count: 1
+    instance_size_slug: basic-xs
+    envs:
+      - key: NODE_ENV
+        value: "production"
       - key: NEXT_PUBLIC_API_URL
-        value: "/api/v1"
+        value: "${_self.HOSTNAME}/api/v1"
       - key: NEXT_PUBLIC_WEBSITE_API_KEY
         scope: RUN_TIME
         value: "${WEBSITE_API_KEY}"
 
 routes:
   - path: /api
-    component: api
+    service: backend
     preserve_path_prefix: true
   - path: /health
-    component: api
+    service: backend
     preserve_path_prefix: false
   - path: /docs
-    component: api
+    service: backend
     preserve_path_prefix: false
   - path: /openapi.json
-    component: api
+    service: backend
     preserve_path_prefix: false
   - path: /
-    component: web
+    service: frontend
     preserve_path_prefix: false

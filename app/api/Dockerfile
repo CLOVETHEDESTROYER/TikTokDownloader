@@ -1,32 +1,36 @@
 FROM python:3.11-slim
 
-WORKDIR /app
-
-# Install system dependencies including ffmpeg and curl for healthcheck
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     curl \
+    gcc \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Set up backend
+WORKDIR /app
+
 # Copy requirements first to leverage Docker cache
-COPY requirements.txt .
+COPY app/api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
-COPY . .
+# Copy backend files
+COPY app/api/ .
 
 # Create necessary directories
-RUN mkdir -p downloads
-RUN mkdir -p logs
-RUN mkdir -p config
+RUN mkdir -p downloads logs config
 
-# Set environment variables
-ENV PORT=8000
+# Environment variables
+ENV PORT=8001
 ENV HOST=0.0.0.0
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH="/app:${PYTHONPATH}"
+ENV ENV=production
+ENV DEBUG=false
 
-# Expose the port
-EXPOSE 8000
+# Expose port
+EXPOSE 8001
 
-# Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"] 
+# Start the application in production mode (no reload, multiple workers)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "4"] 

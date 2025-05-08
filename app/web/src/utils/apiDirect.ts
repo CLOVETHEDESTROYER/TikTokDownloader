@@ -52,21 +52,36 @@ export interface DownloadStatus {
   expires_at?: number;
 }
 
+// Add this debugging at the top of the file
+console.log('Environment Variables Debug:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+console.log('NEXT_PUBLIC_WEBSITE_API_KEY:', process.env.NEXT_PUBLIC_WEBSITE_API_KEY);
+
 /**
  * Create a download for a video URL
  */
-export async function createDownload(url: string, platform: string, quality: string): Promise<DownloadStatus> {
-  // Use platform-specific endpoint
-  const downloadUrl = `${API_URL}/${platform}/download`;
-  console.log('Sending direct API request to:', downloadUrl);
+export async function createDownload(
+  url: string, 
+  platform: string, 
+  quality: string,
+  headers: Record<string, string> = {}
+): Promise<DownloadStatus> {
+  const downloadUrl = `${API_URL}/download`;
+  
+  console.log('Making API request to:', downloadUrl);
+  console.log('Using API Key:', process.env.NEXT_PUBLIC_WEBSITE_API_KEY ? 'Key is present' : 'Key is missing');
   
   const response = await fetch(downloadUrl, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY,
+      ...headers
     },
     body: JSON.stringify({
       url,
+      platform,
       quality,
     }),
   });
@@ -74,9 +89,10 @@ export async function createDownload(url: string, platform: string, quality: str
   if (!response.ok) {
     try {
       const errorData = await response.json();
+      console.error('Error response:', errorData);
       throw new Error(errorData.detail || `Failed to create download: ${response.status}`);
-    } catch {
-      // If parsing the error response fails, throw a generic error
+    } catch (error) {
+      console.error('Error parsing response:', error);
       throw new Error(`Request failed with status ${response.status}`);
     }
   }
@@ -88,7 +104,7 @@ export async function createDownload(url: string, platform: string, quality: str
  * Get the current status of a download
  */
 export async function getDownloadStatus(sessionId: string): Promise<DownloadStatus> {
-  const response = await fetch(`/api/v1/downloads/status/${sessionId}`, {
+  const response = await fetch(`${API_URL}/download/status/${sessionId}`, {
     headers: {
       'Content-Type': 'application/json'
     }
@@ -111,7 +127,7 @@ export async function getDownloadStatus(sessionId: string): Promise<DownloadStat
  * Download a video file by session ID
  */
 export async function downloadVideo(sessionId: string): Promise<Blob> {
-  const response = await fetch(`${API_URL}/file/${sessionId}`, {
+  const response = await fetch(`${API_URL}/download/file/${sessionId}`, {
     method: 'GET',
     headers: {
       'Accept': 'video/mp4'

@@ -1,23 +1,49 @@
-FROM node:18-alpine
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies first, leveraging Docker cache
-COPY package*.json ./
-RUN npm install
+# Copy package files
+COPY app/web/package*.json ./
 
-# Copy the rest of the application
-COPY . .
+# Install dependencies
+RUN npm ci
+
+# Copy the Next.js configuration files
+COPY app/web/next.config.js ./
+COPY app/web/tsconfig.json ./
+COPY app/web/tailwind.config.ts ./
+COPY app/web/postcss.config.mjs ./
+
+# Copy the source code
+COPY app/web/src ./src
+COPY app/web/public ./public
+
+# Build-time arguments
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WEBSITE_API_KEY
+
+# Set environment variables for build time
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WEBSITE_API_KEY=$NEXT_PUBLIC_WEBSITE_API_KEY
+ENV NODE_ENV=production
 
 # Build the application
 RUN npm run build
 
-# Set environment variables
-ENV PORT=3000
-ENV NODE_ENV=production
+# Production image, copy all the files and run next
+FROM node:18-alpine AS runner
 
-# Expose the port
-EXPOSE 3000
+WORKDIR /app
+
+# Copy built assets from builder
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+# Runtime environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
 # Start the application
-CMD ["npm", "start"] 
+CMD ["node", "server.js"] 

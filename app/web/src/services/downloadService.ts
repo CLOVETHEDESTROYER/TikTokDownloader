@@ -30,10 +30,14 @@ export const downloadTikTokVideo = async (
     // In production, use the direct API approach to avoid Next.js API routing issues
     if (process.env.NODE_ENV === 'production') {
       console.log('Using direct API approach in production');
+      const headers = {
+        'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY
+      };
       const data = await createDirectDownload(
         url.trim(),
         'tiktok',
-        quality.toLowerCase()
+        quality.toLowerCase(),
+        headers
       );
       
       // Format the response to match our interface
@@ -63,12 +67,15 @@ export const downloadTikTokVideo = async (
     
     console.log('Sending request to API:', apiUrl);
     
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY
+    };
+    
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
+      headers: headers,
       body: JSON.stringify({ 
         url: url.trim(),
         platform: 'tiktok',
