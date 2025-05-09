@@ -6,4 +6,5 @@ yt-dlp>=2025.4.30
 prometheus-client>=0.21.1
 flask>=2.0.0
 pydantic-settings>=2.9.1
+requests>=2.25.1
 # tkinter is included in standard Python library 

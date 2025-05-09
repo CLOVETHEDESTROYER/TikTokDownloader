@@ -167,6 +167,30 @@ tiktok-downloader/
 - System resource utilization
 - Real-time WebSocket stats
 
+## 💾 Database Schema
+
+This application does not use a persistent database. Instead, it uses in-memory storage in the form of dictionaries to track:
+
+- Active downloads: `{session_id: download_metadata}`
+- Rate limits: `{ip: quota_usage}`
+
+All downloaded files are stored in the filesystem in the configured `DOWNLOAD_FOLDER`. Files are automatically cleaned up after a configurable expiry period.
+
+## 🛠️ TikTok Downloader Implementation
+
+The TikTok download service uses yt-dlp to extract and download videos without watermarks:
+
+1. Video extraction (`get_video_no_watermark`):
+
+   - Uses yt-dlp to extract video information
+   - Looks for formats marked as "no_watermark"
+   - Falls back to the best mp4 format available
+
+2. Download process:
+   - Direct download through yt-dlp
+   - Uses FFmpeg post-processing to ensure watermarks are removed
+   - Creates a unique filename for each download
+
 ## 🤝 Contributing
 
 1. Fork the repository

@@ -1,0 +1,9 @@
+# Instagram cookies file
+# This file should be in Netscape cookies.txt format
+# Format: domain name flag path secure expiration name value
+
+# For Instagram, login to Instagram in your browser and use a cookie exporter extension
+# to export cookies and paste them here for authenticated requests
+
+# Example (do not use, this is a placeholder):
+# .instagram.com TRUE / TRUE 1716391452 sessionid your_session_id_here 

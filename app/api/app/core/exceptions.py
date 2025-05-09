@@ -3,7 +3,7 @@ from fastapi import HTTPException
 
 
 class DownloaderException(HTTPException):
-    """Base exception for downloader errors"""
+    """Base exception for the downloader application"""
 
     def __init__(self, detail: str):
         super().__init__(status_code=400, detail=detail)
@@ -44,14 +44,15 @@ class QualityNotAvailableError(DownloaderException):
     """Raised when requested quality is not available"""
 
     def __init__(self, url: str, quality: str):
-        super().__init__(detail=f"Requested quality {quality} not available")
+        super().__init__(
+            detail=f"Quality '{quality}' not available for video {url}")
 
 
 class NetworkError(DownloaderException):
     """Raised when network issues occur"""
 
-    def __init__(self, url: str, error: str):
-        super().__init__(detail=f"Network error: {error}")
+    def __init__(self, url: str, reason: str):
+        super().__init__(detail=f"Network error downloading {url}: {reason}")
 
 
 class ValidationError(DownloaderException):
@@ -72,20 +73,18 @@ class RateLimitException(HTTPException):
         )
 
 
-class InvalidURLException(HTTPException):
-    def __init__(self, platform: str):
-        super().__init__(
-            status_code=400,
-            detail=f"Invalid {platform} URL provided."
-        )
+class InvalidURLException(DownloaderException):
+    """Raised when URL is invalid for TikTok service"""
 
-
-class DownloadFailedException(HTTPException):
     def __init__(self, reason: str):
-        super().__init__(
-            status_code=500,
-            detail=f"Download failed: {reason}"
-        )
+        super().__init__(detail=f"Invalid URL: {reason}")
+
+
+class DownloadFailedException(DownloaderException):
+    """Raised when download fails for TikTok service"""
+
+    def __init__(self, reason: str):
+        super().__init__(detail=f"Download failed: {reason}")
 
 
 class UnauthorizedException(HTTPException):

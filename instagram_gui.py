@@ -5,6 +5,8 @@ import threading
 import yt_dlp
 import datetime
 import csv
+from concurrent.futures import ThreadPoolExecutor
+from typing import Dict, Any
 
 
 class InstagramDownloaderGUI:
@@ -34,6 +36,21 @@ class InstagramDownloaderGUI:
 
         # Active download flag
         self.download_in_progress = False
+
+        self.active_downloads: Dict[str, Dict[str, Any]] = {}
+        self.download_folder = "downloads"
+        self.executor = ThreadPoolExecutor(
+            max_workers=5)  # Limit concurrent downloads
+        self.file_expiry_seconds = 300  # 5 minutes
+        self.cleanup_task = None
+        try:
+            from tiktok import TikTokService
+        except ImportError:
+            # If running as script and not as module
+            class TikTokService:
+                def __init__(self):
+                    pass
+        self.tiktok_service = TikTokService()
 
     def create_widgets(self):
         # Main frame

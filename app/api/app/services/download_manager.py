@@ -20,6 +20,7 @@ from ..models.download import (
 )
 from ..core.metrics import DOWNLOAD_DURATION as download_duration_seconds, ACTIVE_DOWNLOADS as active_downloads
 from ..core.error_reporting import ErrorReporter
+from .tiktok import TikTokService
 
 
 class DownloadManager:
@@ -30,6 +31,7 @@ class DownloadManager:
             max_workers=5)  # Limit concurrent downloads
         self.file_expiry_seconds = 300  # 5 minutes
         self.cleanup_task = None
+        self.tiktok_service = TikTokService()  # Add this line
         os.makedirs(self.download_folder, exist_ok=True)
 
     async def start_cleanup_task(self):
@@ -80,7 +82,7 @@ class DownloadManager:
             VideoQuality.LOW: 'bestvideo[height<=480]+bestaudio/best[height<=480]'
         }
 
-        return {
+        base_opts = {
             'format': format_opts[quality],
             'outtmpl': os.path.join(self.download_folder, filename),
             'quiet': True,
@@ -90,6 +92,25 @@ class DownloadManager:
             'socket_timeout': 30,
             'retries': 3
         }
+
+        # Add TikTok-specific options for watermark removal
+        if platform == Platform.TIKTOK:
+            base_opts.update({
+                # Force yt-dlp to prefer formats without watermark
+                'extractor_args': {
+                    'tiktok': {
+                        'download_without_watermark': True,
+                        'extract_metadata': True
+                    }
+                },
+                # Add a postprocessor to remove any remaining watermarks
+                'postprocessors': [{
+                    'key': 'FFmpegVideoConvertor',
+                    'preferedformat': 'mp4',
+                }]
+            })
+
+        return base_opts
 
     async def create_download(self, url: str, platform: Platform) -> str:
         """Create a new download session"""
@@ -165,8 +186,56 @@ class DownloadManager:
 
         try:
             self.active_downloads[session_id]["status"] = DownloadStatus.PROCESSING
-            filename = f"{platform.value}_{uuid.uuid4().hex[:8]}.mp4"
 
+            # Use TikTok service for TikTok videos to get no-watermark version
+            if platform == Platform.TIKTOK:
+                try:
+                    # Get video info using TikTok service
+                    tiktok_result = await self.tiktok_service.download_video(url, quality.value)
+
+                    # Update status with the result
+                    self.active_downloads[session_id].update({
+                        "status": DownloadStatus.COMPLETED,
+                        # Extract filename
+                        "filename": tiktok_result["download_url"].split("/")[-1],
+                        "created_at": time.time(),
+                        "expires_at": time.time() + self.file_expiry_seconds,
+                        "title": tiktok_result.get("description", "TikTok Video"),
+                        "author": tiktok_result.get("author", "Unknown"),
+                        "progress": 100
+                    })
+
+                    # Record download duration
+                    duration = time.time() - start_time
+                    download_duration_seconds.labels(
+                        platform=platform.value,
+                        quality=quality.value
+                    ).observe(duration)
+
+                    # Return result
+                    return DownloadResponse(
+                        session_id=session_id,
+                        status=DownloadStatus.COMPLETED,
+                        progress=100,
+                        url=url,
+                        filename=tiktok_result["download_url"].split("/")[-1],
+                        expires_at=self.active_downloads[session_id]["expires_at"],
+                        title=tiktok_result.get("description", "TikTok Video"),
+                        author=tiktok_result.get("author", "Unknown"),
+                        duration=duration
+                    )
+                except Exception as e:
+                    ErrorReporter.report_download_error(
+                        error=e,
+                        platform=platform.value,
+                        url=url,
+                        session_id=session_id,
+                        context={"stage": "tiktok_service_download"}
+                    )
+                    raise
+
+            # For other platforms, continue with the normal download process
+            filename = f"{platform.value}_{uuid.uuid4().hex[:8]}.mp4"
             ydl_opts = self._get_ydl_opts(platform, quality, filename)
 
             # First, check if video exists and quality is available
@@ -347,6 +416,43 @@ class DownloadManager:
         })
 
         try:
+            # Use TikTok service for TikTok batch downloads
+            if platform == Platform.TIKTOK:
+                try:
+                    # Get results using TikTok batch download
+                    tiktok_results = await self.tiktok_service.batch_download(urls, quality.value)
+
+                    # Process results
+                    for i, result in enumerate(tiktok_results):
+                        self.active_downloads[session_id]["processed_urls"] = i + 1
+                        self.active_downloads[session_id]["progress"] = int(
+                            ((i + 1) / total_urls) * 100)
+
+                        if result.get("status") == "failed":
+                            self.active_downloads[session_id]["errors"].append({
+                                "url": urls[i] if i < len(urls) else "unknown",
+                                "error": result.get("message", "Unknown error")
+                            })
+
+                    # Set final status based on errors
+                    has_errors = bool(
+                        self.active_downloads[session_id]["errors"])
+                    final_status = DownloadStatus.COMPLETED if not has_errors else DownloadStatus.FAILED
+                    self.active_downloads[session_id]["status"] = final_status
+
+                    return BatchDownloadResponse(
+                        session_id=session_id,
+                        total_urls=total_urls,
+                        processed_urls=self.active_downloads[session_id]["processed_urls"],
+                        status=final_status,
+                        progress=100
+                    )
+                except Exception as e:
+                    self.active_downloads[session_id]["status"] = DownloadStatus.FAILED
+                    self.active_downloads[session_id]["error"] = str(e)
+                    raise
+
+            # For other platforms, continue with the normal batch download process
             for i, url in enumerate(urls, 1):
                 try:
                     filename = f"{platform.value}_batch_{uuid.uuid4().hex[:8]}.mp4"

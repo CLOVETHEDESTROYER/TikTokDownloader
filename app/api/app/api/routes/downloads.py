@@ -23,6 +23,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 import uuid
 from ...core.error_reporting import ErrorReporter
+from typing import Optional
 
 router = APIRouter()
 download_manager = DownloadManager()

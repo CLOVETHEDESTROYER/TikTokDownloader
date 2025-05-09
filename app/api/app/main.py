@@ -6,7 +6,7 @@ from fastapi.security import APIKeyHeader
 import uvicorn
 import os
 import uuid
-from .api.routes import downloads, instagram
+from .api.routes import downloads
 from .core.error_handlers import setup_error_handlers
 from .core.config import settings
 from . import routes_test
@@ -22,9 +22,18 @@ from .core.logging_config import setup_logging
 from .core.exceptions import DownloaderException
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from starlette.middleware.base import BaseHTTPMiddleware
+from contextlib import asynccontextmanager
+import prometheus_client
+from prometheus_client import Counter, Histogram, Gauge
+from .routes import tiktok as tiktok_routes
 
 # Load environment variables
 load_dotenv()
+
+# Override settings for development
+if os.getenv("ENV", "development") == "development":
+    os.environ["REQUIRE_API_KEY"] = "false"
 
 # Set up logging
 setup_logging()
@@ -37,10 +46,32 @@ limiter = Limiter(key_func=get_remote_address)
 api_key_header = APIKeyHeader(
     name=settings.API_KEY_HEADER_NAME, auto_error=False)
 
+# Create metrics
+REQUEST_COUNT = Counter(
+    'request_count', 'App Request Count',
+    ['app_name', 'method', 'endpoint', 'http_status']
+)
+REQUEST_LATENCY = Histogram(
+    'request_latency_seconds', 'Request latency',
+    ['app_name', 'endpoint']
+)
+ACTIVE_CONNECTIONS = Gauge(
+    'active_connections', 'Active connections',
+    ['app_name']
+)
+
+
+@asynccontextmanager
+async def lifespan(app):
+    # Startup logic (if any)
+    yield
+    # Shutdown logic (if any)
+
 app = FastAPI(
     title="Social Media Downloader API",
     description="API for downloading TikTok and Instagram content",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Debug log the configuration
@@ -189,8 +220,8 @@ async def health_check(request: Request):
 # Include our download routes
 app.include_router(downloads.router, prefix="/api/v1", tags=["downloads"])
 
-# Include Instagram routes - temporarily disabled
-# app.include_router(instagram.router, prefix="/api/v1", tags=["instagram"])
+# Include TikTok routes from app/routes
+app.include_router(tiktok_routes.router, tags=["tiktok"])
 
 # Include our test routes for debugging only
 if settings.DEBUG:
@@ -212,6 +243,69 @@ async def root(request: Request):
 async def metrics(api_key: str = Depends(verify_admin_api_key)):
     """Endpoint for Prometheus metrics - admin access only"""
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+# Middleware for request ID and timing
+
+
+class RequestMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        request_id = str(uuid.uuid4())
+        request.state.request_id = request_id
+
+        # Track metrics
+        ACTIVE_CONNECTIONS.labels(app_name="tiktok_downloader").inc()
+        start_time = time.time()
+
+        try:
+            response = await call_next(request)
+
+            # Record metrics
+            process_time = time.time() - start_time
+            REQUEST_LATENCY.labels(
+                app_name="tiktok_downloader",
+                endpoint=request.url.path
+            ).observe(process_time)
+
+            REQUEST_COUNT.labels(
+                app_name="tiktok_downloader",
+                method=request.method,
+                endpoint=request.url.path,
+                http_status=response.status_code
+            ).inc()
+
+            response.headers["X-Process-Time"] = str(process_time)
+            response.headers["X-Request-ID"] = request_id
+            return response
+        except Exception as exc:
+            logger.error(f"Error occurred: {exc}", exc_info=True)
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Internal server error"}
+            )
+        finally:
+            ACTIVE_CONNECTIONS.labels(app_name="tiktok_downloader").dec()
+
+# Exception handler for custom exceptions
+
+
+@app.exception_handler(DownloaderException)
+async def downloader_exception_handler(request: Request, exc: DownloaderException):
+    logger.error(f"Error occurred: {exc.detail}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+# Exception handler for generic exceptions
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unexpected error occurred: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred"},
+    )
 
 if __name__ == "__main__":
     uvicorn.run(
