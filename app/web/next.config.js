@@ -30,7 +30,8 @@ const nextConfig = {
   // Add other configurations as needed
   output: 'standalone',
   experimental: {
-    outputFileTracingRoot: undefined,
+    // Enable CSS layer support
+    layers: true,
   },
 };
 

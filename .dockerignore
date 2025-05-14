@@ -4,18 +4,11 @@
 .gitattributes
 
 # Dependencies
-node_modules
 venv
 __pycache__
 *.pyc
 .env
 .env.local
-
-# Build outputs
-frontend/.next
-frontend/out
-frontend/build
-frontend/.turbo
 
 # Development files
 .vscode
@@ -34,4 +27,8 @@ logs/
 .docker
 docker-compose*.yml
 Dockerfile*
-.dockerignore 
+.dockerignore
+
+# Node.js specific (not needed in simplified version)
+node_modules
+frontend/ 

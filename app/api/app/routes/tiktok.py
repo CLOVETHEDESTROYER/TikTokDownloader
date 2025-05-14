@@ -18,24 +18,40 @@ def verify_api_key(x_api_key: Optional[str] = Header(None)):
     return x_api_key
 
 
-@router.post("/download", response_model=DownloadResponse)
-async def download_video(
-    request: DownloadRequest,
-    api_key: str = Depends(verify_api_key)
-):
+@router.post("/download")
+async def download_video(url: str, api_key: str = Depends(verify_api_key)):
     """Download a single TikTok video"""
     service = TikTokService()
-    return await service.download_video(request.url, request.quality)
+    try:
+        result = await service.download_video(url)
+        return {
+            "status": "success",
+            "filename": result["filename"],
+            "title": result["title"],
+            "url": result["url"]
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 
-@router.post("/batch", response_model=List[DownloadResponse])
-async def batch_download(
-    request: BatchDownloadRequest,
-    api_key: str = Depends(verify_api_key)
-):
+@router.post("/batch")
+async def batch_download(urls: List[str], api_key: str = Depends(verify_api_key)):
     """Download multiple TikTok videos"""
     service = TikTokService()
-    return await service.batch_download(request.urls, request.quality)
+    try:
+        results = await service.batch_download(urls)
+        return {
+            "status": "success",
+            "results": results
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 
 @router.get("/status/{session_id}", response_model=DownloadStatus)

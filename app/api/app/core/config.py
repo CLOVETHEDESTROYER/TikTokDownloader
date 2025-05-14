@@ -107,6 +107,7 @@ class Settings(BaseSettings):
 
     # Download settings
     DOWNLOAD_FOLDER: str = os.getenv("DOWNLOAD_FOLDER", "downloads")
+    LOG_FOLDER: str = os.getenv("LOG_FOLDER", "logs")
     MAX_DOWNLOADS: int = int(os.getenv("MAX_DOWNLOADS", "10"))
     MAX_CONCURRENT_DOWNLOADS: int = int(
         os.getenv("MAX_CONCURRENT_DOWNLOADS", "5"))

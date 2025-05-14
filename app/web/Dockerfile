@@ -5,8 +5,8 @@ WORKDIR /app
 # Copy package files
 COPY app/web/package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies and update package-lock.json
+RUN npm install
 
 # Copy the Next.js configuration files
 COPY app/web/next.config.js ./

@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   backend:
     build:
@@ -5,24 +7,21 @@ services:
       dockerfile: app/api/Dockerfile
     ports:
       - "8001:8001"
-    volumes:
-      - downloads:/app/downloads
     environment:
+      - ENV=development
+      - DEBUG=true
       - PORT=8001
-      - ENV=production
-      - DEBUG=false
-      - API_KEY_HEADER_NAME=X-API-Key
-      - REQUIRE_API_KEY=true
-      - DOWNLOAD_FOLDER=/app/downloads
-      - MAX_DOWNLOADS=50
-      - MAX_CONCURRENT_DOWNLOADS=10
-      - DOWNLOAD_EXPIRY_MINUTES=60
-      - VERIFY_SSL=true
-      - RATE_LIMIT_PER_MINUTE=60
-      - ALLOWED_ORIGINS=https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com
-      - ADMIN_API_KEY=${ADMIN_API_KEY}
-      - API_SECRET_KEY=${API_SECRET_KEY}
-      - WEBSITE_API_KEY=${WEBSITE_API_KEY}
+      - HOST=0.0.0.0
+      - API_SECRET_KEY=dev-secret-key
+      - JWT_SECRET_KEY=dev-jwt-secret
+      - WEBSITE_API_KEY=dev-website-key
+      - ADMIN_API_KEY=dev-admin-key
+      - REQUIRE_API_KEY=false
+      - FRONTEND_URL=http://localhost:3000
+      - PYTHONPATH=/app
+    volumes:
+      - ./downloads:/app/downloads
+      - ./logs:/app/logs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s
@@ -35,24 +34,20 @@ services:
     build:
       context: .
       dockerfile: app/web/Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
-        NEXT_PUBLIC_WEBSITE_API_KEY: ${WEBSITE_API_KEY}
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
-      - NEXT_PUBLIC_WEBSITE_API_KEY=${WEBSITE_API_KEY}
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8001
+      - NEXT_PUBLIC_WEBSITE_API_KEY=dev-website-key
     depends_on:
       - backend
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - app-network
 
 volumes:
-  downloads: 
+  downloads:
+  logs:
 
 networks:
   app-network:
