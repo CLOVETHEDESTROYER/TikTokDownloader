@@ -36,9 +36,8 @@ export default function Home() {
   
   // Set the debugger visibility based on environment
   useEffect(() => {
-    // Show the debugger in production to troubleshoot deployment issues
-    // Later you can change this to only show in development
-    setShowDebugger(true);
+    // Only show the debugger in development mode
+    setShowDebugger(process.env.NODE_ENV === 'development');
   }, []);
 
   const handleDownloadComplete = (sessionId: string) => {
@@ -102,7 +101,7 @@ export default function Home() {
           <p className="text-sm text-gray-500 mt-2">
             {process.env.NODE_ENV === 'development' 
               ? '🔧 Running in development mode' 
-              : '🚀 Running in production mode'}
+              : ''}
           </p>
         </div>
         
@@ -179,7 +178,7 @@ export default function Home() {
           </div>
         </div>
         
-        {/* API Debugger - Only visible when showDebugger is true */}
+        {/* API Debugger - Only visible in development mode */}
         {showDebugger && <ApiDebugger />}
       </main>
     </>
