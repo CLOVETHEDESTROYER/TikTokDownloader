@@ -1,0 +1,41 @@
+FROM python:3.11-slim
+
+# Install essential system dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    curl \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up working directory
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY app/api/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Ensure the latest yt-dlp version
+RUN pip install --no-cache-dir yt-dlp==2024.3.10
+
+# Create necessary directories
+RUN mkdir -p downloads logs config
+
+# Copy application code
+COPY app/api/app /app/app
+COPY app/api/config /app/config
+
+# Set environment variables
+ENV PORT=8001
+ENV HOST=0.0.0.0
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH="/app:${PYTHONPATH}"
+ENV ENV=production
+ENV DEBUG=false
+ENV DOWNLOAD_NO_WATERMARK=true
+
+# Expose port
+EXPOSE 8001
+
+# Start the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "2"] 

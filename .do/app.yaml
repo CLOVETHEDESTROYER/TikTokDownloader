@@ -60,6 +60,10 @@ services:
       - key: ALLOWED_ORIGINS
         value: "https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com"
 
+      # New environment variable
+      - key: DOWNLOAD_NO_WATERMARK
+        value: "true"
+
   - name: frontend
     dockerfile_path: app/web/Dockerfile
     source_dir: .

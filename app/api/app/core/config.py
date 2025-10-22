@@ -24,6 +24,19 @@ class Settings(BaseSettings):
     REQUIRE_API_KEY: bool = os.getenv(
         "REQUIRE_API_KEY", "true").lower() in ("true", "1", "yes")
 
+    # Social Media API Settings
+    INSTAGRAM_APP_ID: str = os.getenv("INSTAGRAM_APP_ID", "")
+    INSTAGRAM_APP_SECRET: str = os.getenv("INSTAGRAM_APP_SECRET", "")
+    INSTAGRAM_REDIRECT_URI: str = os.getenv("INSTAGRAM_REDIRECT_URI", "http://localhost:3000/auth/instagram/callback")
+    
+    TIKTOK_APP_ID: str = os.getenv("TIKTOK_APP_ID", "")
+    TIKTOK_APP_SECRET: str = os.getenv("TIKTOK_APP_SECRET", "")
+    TIKTOK_REDIRECT_URI: str = os.getenv("TIKTOK_REDIRECT_URI", "http://localhost:3000/auth/tiktok/callback")
+    
+    FACEBOOK_APP_ID: str = os.getenv("FACEBOOK_APP_ID", "")
+    FACEBOOK_APP_SECRET: str = os.getenv("FACEBOOK_APP_SECRET", "")
+    FACEBOOK_REDIRECT_URI: str = os.getenv("FACEBOOK_REDIRECT_URI", "http://localhost:3000/auth/facebook/callback")
+
     # Environment
     ENV: str = os.getenv("ENV", "development")
     DEBUG: bool = ENV == "development"
@@ -157,6 +170,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # Allow extra environment variables
 
 
 # Create a global settings object

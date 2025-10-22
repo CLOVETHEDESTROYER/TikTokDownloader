@@ -23,10 +23,18 @@ from .core.exceptions import DownloaderException
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 import prometheus_client
 from prometheus_client import Counter, Histogram, Gauge
+import secrets
 from .routes import tiktok as tiktok_routes
+from .routes import youtube as youtube_routes
+from .routes import facebook as facebook_routes
+from .routes import social as social_routes
+from .routes import publishing as publishing_routes
+from .routes import sora as sora_routes
+from .routes import audio as audio_routes
 
 # Load environment variables
 load_dotenv()
@@ -86,6 +94,12 @@ logger.info(f"API KEY REQUIRED: {settings.REQUIRE_API_KEY}")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# Add session middleware BEFORE CORS middleware
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.API_SECRET_KEY or secrets.token_urlsafe(32)
+)
+
 # Configure CORS using settings
 app.add_middleware(
     CORSMiddleware,
@@ -117,6 +131,38 @@ async def verify_admin_api_key(api_key: str = Depends(api_key_header)):
             detail="Invalid admin API key",
         )
     return api_key
+
+# Authentication endpoints
+
+
+class LoginRequest(BaseModel):
+    api_key: str
+
+
+@app.post("/api/v1/auth/login")
+async def login(request: Request, login_data: LoginRequest):
+    """Store API key in session"""
+    if (settings.ADMIN_API_KEY and login_data.api_key == settings.ADMIN_API_KEY) or \
+       (settings.WEBSITE_API_KEY and login_data.api_key == settings.WEBSITE_API_KEY):
+        request.session["api_key"] = login_data.api_key
+        return {"message": "Authentication successful", "authenticated": True}
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Invalid API key"
+    )
+
+
+@app.post("/api/v1/auth/logout")
+async def logout(request: Request):
+    """Clear API key from session"""
+    request.session.clear()
+    return {"message": "Logged out successfully"}
+
+
+@app.get("/api/v1/auth/status")
+async def auth_status(request: Request):
+    """Check authentication status"""
+    return {"authenticated": "api_key" in request.session}
 
 # API Key dependency for general endpoints
 
@@ -176,12 +222,23 @@ async def api_key_middleware(request: Request, call_next):
         if request.url.path.startswith(path):
             return await call_next(request)
 
+    # Skip authentication for auth endpoints
+    if request.url.path.startswith("/api/v1/auth"):
+        return await call_next(request)
+
     # Skip API key check in development mode if configured
     if settings.ENV == "development" and not settings.REQUIRE_API_KEY:
         return await call_next(request)
 
-    # Check API key
-    api_key = request.headers.get(settings.API_KEY_HEADER_NAME)
+    # Check session for stored API key first
+    try:
+        session_api_key = request.session.get("api_key")
+    except:
+        session_api_key = None
+
+    # Then check header
+    api_key = session_api_key or request.headers.get(
+        settings.API_KEY_HEADER_NAME)
 
     # If no API key is provided and it's required
     if not api_key and settings.REQUIRE_API_KEY:
@@ -222,6 +279,24 @@ app.include_router(downloads.router, prefix="/api/v1", tags=["downloads"])
 
 # Include TikTok routes from app/routes
 app.include_router(tiktok_routes.router, tags=["tiktok"])
+
+# Include YouTube routes from app/routes
+app.include_router(youtube_routes.router, tags=["youtube"])
+
+# Include Facebook routes from app/routes
+app.include_router(facebook_routes.router, tags=["facebook"])
+
+# Include Social Media routes from app/routes
+app.include_router(social_routes.router, tags=["social"])
+
+# Include Publishing routes from app/routes
+app.include_router(publishing_routes.router, tags=["publishing"])
+
+# Include Sora routes from app/routes
+app.include_router(sora_routes.router, prefix="/api/v1", tags=["sora"])
+
+# Include audio extraction routes
+app.include_router(audio_routes.router, tags=["audio"])
 
 # Include our test routes for debugging only
 if settings.DEBUG:

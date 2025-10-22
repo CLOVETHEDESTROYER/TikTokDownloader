@@ -58,6 +58,16 @@ const Header: React.FC = () => {
             Home
           </Link>
           <Link 
+            href="/sora" 
+            className={`text-sm font-medium transition-colors duration-200 ${
+              pathname === '/sora' 
+                ? 'text-teal-600 dark:text-teal-400' 
+                : 'text-gray-700 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400'
+            }`}
+          >
+            Sora 2
+          </Link>
+          <Link 
             href="/about" 
             className={`text-sm font-medium transition-colors duration-200 ${
               pathname === '/about' 
@@ -119,6 +129,17 @@ const Header: React.FC = () => {
               onClick={toggleMobileMenu}
             >
               Home
+            </Link>
+            <Link 
+              href="/sora" 
+              className={`text-base font-medium transition-colors duration-200 ${
+                pathname === '/sora' 
+                  ? 'text-teal-600 dark:text-teal-400' 
+                  : 'text-gray-700 dark:text-gray-300'
+              }`}
+              onClick={toggleMobileMenu}
+            >
+              Sora 2
             </Link>
             <Link 
               href="/about" 

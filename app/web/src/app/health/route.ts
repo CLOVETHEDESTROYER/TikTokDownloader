@@ -1,12 +1,14 @@
 // frontend/src/app/health/route.ts
 export async function GET() {
   try {
-    // Use the backend service name and correct port from docker-compose
-    const healthUrl = 'http://backend:8001/health';
+    // Use localhost for local development, Docker network for production
+    const healthUrl = process.env.NODE_ENV === 'production' 
+      ? 'http://backend:8001/health' 
+      : 'http://localhost:8000/health';
+    
     console.log('Proxying health check to:', healthUrl);
     
     const response = await fetch(healthUrl, {
-      // Add these headers to ensure the request works within Docker network
       headers: {
         'Accept': 'application/json',
       },
@@ -34,4 +36,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-} 
+}

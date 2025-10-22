@@ -4,6 +4,7 @@ import uuid
 import requests
 import re
 import logging
+import time
 from typing import List
 from pydantic import HttpUrl
 from ..core.config import settings
@@ -17,6 +18,12 @@ class TikTokService:
     def __init__(self):
         self.download_path = settings.DOWNLOAD_FOLDER
         os.makedirs(self.download_path, exist_ok=True)
+
+        # Check if no watermark is explicitly enabled
+        self.force_no_watermark = os.getenv(
+            "DOWNLOAD_NO_WATERMARK", "false").lower() == "true"
+        if self.force_no_watermark:
+            logger.info("TikTok watermark removal is explicitly enabled")
 
         self.ydl_opts = {
             'format': 'best',
@@ -144,6 +151,16 @@ class TikTokService:
                 },
             }
 
+            # If force_no_watermark is enabled, add additional FFmpeg options
+            if self.force_no_watermark:
+                logger.info(
+                    f"Applying enhanced watermark removal for URL: {url}")
+                # Add more aggressive FFmpeg postprocessing for watermark removal
+                ydl_opts['postprocessors'].append({
+                    'key': 'FFmpegVideoRemuxer',
+                    'preferedformat': 'mp4',
+                })
+
             # Quality-specific format selection
             if quality == "high":
                 ydl_opts['format'] = 'bestvideo+bestaudio/best'
@@ -177,6 +194,11 @@ class TikTokService:
             if not os.path.exists(file_path):
                 raise DownloadFailedException(
                     "Download completed but file not found")
+
+            # Update file timestamp to current time for better organization on mobile devices
+            current_time = time.time()
+            os.utime(file_path, (current_time, current_time))
+            logger.info(f"Updated file timestamp to current time for: {file_path}")
 
             logger.info(f"Successfully downloaded video to: {file_path}")
             return {

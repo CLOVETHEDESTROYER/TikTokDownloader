@@ -6,6 +6,8 @@ from enum import Enum
 class Platform(str, Enum):
     TIKTOK = "tiktok"
     INSTAGRAM = "instagram"
+    YOUTUBE = "youtube"
+    FACEBOOK = "facebook"
 
 
 class DownloadRequest(BaseModel):

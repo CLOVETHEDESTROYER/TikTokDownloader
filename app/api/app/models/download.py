@@ -6,6 +6,8 @@ from enum import Enum
 class Platform(str, Enum):
     TIKTOK = "tiktok"
     INSTAGRAM = "instagram"
+    YOUTUBE = "youtube"
+    FACEBOOK = "facebook"
 
 
 class VideoQuality(str, Enum):
@@ -28,6 +30,10 @@ class DownloadRequest(BaseModel):
             raise ValueError('URL must be from TikTok')
         elif platform == Platform.INSTAGRAM and 'instagram.com' not in url_str:
             raise ValueError('URL must be from Instagram')
+        elif platform == Platform.YOUTUBE and 'youtube.com' not in url_str and 'youtu.be' not in url_str:
+            raise ValueError('URL must be from YouTube')
+        elif platform == Platform.FACEBOOK and 'facebook.com' not in url_str and 'fb.watch' not in url_str:
+            raise ValueError('URL must be from Facebook')
         return v
 
 
@@ -68,7 +74,19 @@ class BatchDownloadRequest(BaseModel):
                 raise ValueError(f'URL {url} must be from TikTok')
             elif platform == Platform.INSTAGRAM and 'instagram.com' not in url_str:
                 raise ValueError(f'URL {url} must be from Instagram')
+            elif platform == Platform.YOUTUBE and 'youtube.com' not in url_str and 'youtu.be' not in url_str:
+                raise ValueError(f'URL {url} must be from YouTube')
+            elif platform == Platform.FACEBOOK and 'facebook.com' not in url_str and 'fb.watch' not in url_str:
+                raise ValueError(f'URL {url} must be from Facebook')
         return v
+
+
+class DownloadStatus(str, Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    EXPIRED = "expired"
 
 
 class BatchDownloadResponse(BaseModel):

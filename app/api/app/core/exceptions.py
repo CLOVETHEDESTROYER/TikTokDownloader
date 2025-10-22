@@ -88,8 +88,8 @@ class DownloadFailedException(DownloaderException):
 
 
 class UnauthorizedException(HTTPException):
-    def __init__(self):
+    def __init__(self, detail: str = "Invalid or missing API key"):
         super().__init__(
             status_code=401,
-            detail="Invalid or missing API key"
+            detail=detail
         )

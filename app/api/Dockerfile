@@ -8,12 +8,15 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up backend
+# Set up backend working directory
 WORKDIR /app
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Ensure the latest yt-dlp version for TikTok watermark removal
+RUN pip install --no-cache-dir yt-dlp>=2025.4.30
 
 # Copy backend files
 COPY . .
@@ -28,6 +31,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH="/app:${PYTHONPATH}"
 ENV ENV=production
 ENV DEBUG=false
+ENV DOWNLOAD_NO_WATERMARK=true
 
 # Expose port
 EXPOSE 8001

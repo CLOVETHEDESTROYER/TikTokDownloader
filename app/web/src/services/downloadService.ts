@@ -31,7 +31,7 @@ export const downloadTikTokVideo = async (
     if (process.env.NODE_ENV === 'production') {
       console.log('Using direct API approach in production');
       const headers = {
-        'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY
+        'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || ''
       };
       const data = await createDirectDownload(
         url.trim(),
@@ -70,7 +70,7 @@ export const downloadTikTokVideo = async (
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY
+      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || ''
     };
     
     const response = await fetch(apiUrl, {

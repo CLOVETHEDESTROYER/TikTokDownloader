@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  tiktok-backend:
+    build:
+      context: .
+      dockerfile: app/api/Dockerfile.tiktok
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./downloads:/app/downloads
+    environment:
+      - PORT=8001
+      - ENV=production
+      - DEBUG=false
+      - API_KEY_HEADER_NAME=X-API-Key
+      - REQUIRE_API_KEY=true
+      - DOWNLOAD_FOLDER=/app/downloads
+      - MAX_DOWNLOADS=50
+      - MAX_CONCURRENT_DOWNLOADS=10
+      - DOWNLOAD_EXPIRY_MINUTES=60
+      - VERIFY_SSL=true
+      - RATE_LIMIT_PER_MINUTE=60
+      - DOWNLOAD_NO_WATERMARK=true
+    restart: unless-stopped
+
+volumes:
+  downloads: 

@@ -23,6 +23,7 @@ services:
       - ADMIN_API_KEY=${ADMIN_API_KEY}
       - API_SECRET_KEY=${API_SECRET_KEY}
       - WEBSITE_API_KEY=${WEBSITE_API_KEY}
+      - DOWNLOAD_NO_WATERMARK=true
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s

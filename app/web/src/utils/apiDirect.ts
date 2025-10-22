@@ -50,6 +50,20 @@ export interface DownloadStatus {
   filename?: string;
   error?: string;
   expires_at?: number;
+  // Additional fields from TikTok and extended responses
+  id?: string;
+  title?: string;
+  author?: string;
+  duration?: number;
+  thumbnail?: string;
+  preview_url?: string;
+  download_url?: string;
+  file_path?: string;
+  downloadLinks?: Array<{
+    quality: string;
+    size: string;
+    url: string;
+  }>;
 }
 
 // Add this debugging at the top of the file
@@ -67,23 +81,27 @@ export async function createDownload(
   quality: string,
   headers: Record<string, string> = {}
 ): Promise<DownloadStatus> {
+  // Always use the main download endpoint
   const downloadUrl = `${API_URL}/download`;
   
   console.log('Making API request to:', downloadUrl);
   console.log('Using API Key:', process.env.NEXT_PUBLIC_WEBSITE_API_KEY ? 'Key is present' : 'Key is missing');
   
+  // Always include platform in request body
+  const requestBody = { 
+    url, 
+    platform, 
+    quality 
+  };
+  
   const response = await fetch(downloadUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY,
+      'X-API-Key': process.env.NEXT_PUBLIC_WEBSITE_API_KEY || '',
       ...headers
     },
-    body: JSON.stringify({
-      url,
-      platform,
-      quality,
-    }),
+    body: JSON.stringify(requestBody),
   });
   
   if (!response.ok) {

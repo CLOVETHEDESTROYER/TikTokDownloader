@@ -93,7 +93,7 @@ class DownloadManager:
             'retries': 3
         }
 
-        # Add TikTok-specific options for watermark removal
+        # Add platform-specific options
         if platform == Platform.TIKTOK:
             base_opts.update({
                 # Force yt-dlp to prefer formats without watermark
@@ -108,6 +108,30 @@ class DownloadManager:
                     'key': 'FFmpegVideoConvertor',
                     'preferedformat': 'mp4',
                 }]
+            })
+        elif platform == Platform.YOUTUBE:
+            # YouTube-specific options for better quality and Shorts support
+            base_opts.update({
+                'extract_flat': False,
+                'writethumbnail': False,
+                'writeinfojson': False,
+                'writesubtitles': False,
+                'writeautomaticsub': False,
+                # Optimize for YouTube Shorts (vertical videos)
+                'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]' if quality == VideoQuality.HIGH else format_opts[quality]
+            })
+        elif platform == Platform.FACEBOOK:
+            # Facebook-specific options
+            base_opts.update({
+                'extract_flat': False,
+                'writethumbnail': False,
+                'writeinfojson': False,
+                'writesubtitles': False,
+                'writeautomaticsub': False,
+                # Facebook may require cookies for some content
+                'cookiefile': None,  # Can be configured if needed
+                # Optimize for Facebook videos
+                'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]' if quality == VideoQuality.HIGH else format_opts[quality]
             })
 
         return base_opts
