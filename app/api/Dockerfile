@@ -6,23 +6,26 @@ RUN apt-get update && apt-get install -y \
     curl \
     gcc \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ffmpeg -version  # Verify FFmpeg installation
 
 # Set up backend working directory
 WORKDIR /app
 
 # Copy requirements first to leverage Docker cache
-COPY requirements.txt .
+COPY app/api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Ensure the latest yt-dlp version for TikTok watermark removal
 RUN pip install --no-cache-dir yt-dlp>=2025.4.30
 
 # Copy backend files
-COPY . .
+COPY app/api/app ./app
+COPY app/api/config ./config
 
-# Create necessary directories
-RUN mkdir -p downloads logs config
+# Create necessary directories with proper permissions
+RUN mkdir -p downloads logs && \
+    chmod -R 777 downloads logs
 
 # Environment variables
 ENV PORT=8001
@@ -32,6 +35,8 @@ ENV PYTHONPATH="/app:${PYTHONPATH}"
 ENV ENV=production
 ENV DEBUG=false
 ENV DOWNLOAD_NO_WATERMARK=true
+ENV DOWNLOAD_FOLDER=/app/downloads
+ENV LOG_FOLDER=/app/logs
 
 # Expose port
 EXPOSE 8001

@@ -14,29 +14,25 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
-  // Add API route rewrites for local development
+  // Add API route rewrites
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: process.env.NODE_ENV === 'production' 
-          ? 'http://backend:8001/api/:path*'
-          : 'http://localhost:8000/api/:path*',
+        destination: 'http://backend:8001/api/:path*',
       },
       {
         source: '/health',
-        destination: process.env.NODE_ENV === 'production' 
-          ? 'http://backend:8001/health'
-          : 'http://localhost:8000/health',
+        destination: 'http://backend:8001/health',
       },
     ];
   },
   // Add other configurations as needed
   output: 'standalone',
-  // Remove the problematic experimental config
   experimental: {
-    // Remove outputFileTracingRoot to fix the warning
+    // Enable CSS layer support
+    layers: true,
   },
 };
 
-module.exports = nextConfig;
+module.exports = nextConfig; 
