@@ -102,14 +102,19 @@ class FacebookService:
                 'quiet': True,
                 'no_warnings': True,
                 'extract_flat': False,
-                'socket_timeout': 30,
-                'retries': 3,
-                # Facebook-specific options
-                'extract_flat': False,
+                'socket_timeout': 60,
+                'retries': 5,
+                # Facebook-specific options for better compatibility
                 'writethumbnail': False,
                 'writeinfojson': False,
                 'writesubtitles': False,
                 'writeautomaticsub': False,
+                # Better user agent for Facebook
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'referer': 'https://www.facebook.com/',
+                # Handle Facebook share URLs better
+                'noplaylist': True,
+                'ignoreerrors': False,
                 # Add post-processing options to ensure video+audio merging with Apple compatibility
                 'postprocessors': [{
                     'key': 'FFmpegVideoConvertor',

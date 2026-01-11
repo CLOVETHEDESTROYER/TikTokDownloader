@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""
+Batch Facebook Video Downloader
+Downloads multiple Facebook videos using the API batch endpoint
+"""
+
+import requests
+import json
+import time
+import sys
+import os
+from typing import List
+
+# Configuration
+API_BASE_URL = os.getenv("API_URL", "http://localhost:8000")
+# Use regular batch endpoint to get all results including failures
+API_ENDPOINT = f"{API_BASE_URL}/api/v1/facebook/batch"
+API_KEY = os.getenv("API_KEY", "website_key_123")  # Default dev key from .env file
+
+# Facebook URLs to download
+FACEBOOK_URLS = [
+    "https://www.facebook.com/share/r/1aHKgeNaZ5/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1CXhmsrQRE/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1Aa6LZtR2T/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1BR2VoMGNb/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/14RLzaAsB3Y/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1BsWQWvgwZ/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/17CoMGx6aV/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/v/1AEE17uAee/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1akUYXy1Nb/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/v/1BnS3BoZ5N/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/v/1aEv9yT8XV/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/v/1QKRrwq7FY/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/v/17byddrG14/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/v/17TUhUbjs4/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/16ncGKCJqL/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1Ay99Lt9HK/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1DB8afDjAd/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/17ieRvj5fJ/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/17XS7t8QGj/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1Ece9Rwz7W/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1D3jk4DFzn/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1MxEVxSqrc/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/17D4FN3pLN/?mibextid=wwXIfr",
+    "https://www.facebook.com/share/r/1VhtNrGk8v/?mibextid=wwXIfr",
+]
+
+
+def check_api_health() -> bool:
+    """Check if the API is running and accessible"""
+    try:
+        response = requests.get(f"{API_BASE_URL}/health", timeout=5)
+        return response.status_code == 200
+    except requests.exceptions.RequestException:
+        return False
+
+
+def download_facebook_batch(urls: List[str], quality: str = "high") -> List[dict]:
+    """Download multiple Facebook videos using the batch endpoint"""
+    
+    print(f"\n📥 Starting batch download of {len(urls)} Facebook videos...")
+    print(f"🔗 API Endpoint: {API_ENDPOINT}")
+    print(f"⚙️  Quality: {quality}\n")
+    
+    # Prepare request data for batch endpoint (requires platform field)
+    request_data = {
+        "urls": urls,
+        "platform": "facebook",
+        "quality": quality
+    }
+    
+    # Prepare headers
+    headers = {
+        "Content-Type": "application/json",
+    }
+    
+    # Add API key if provided (may not be required in dev mode)
+    if API_KEY:
+        headers["X-API-Key"] = API_KEY
+    # In development mode, API key may not be required
+    
+    try:
+        print("⏳ Sending batch download request...")
+        start_time = time.time()
+        
+        response = requests.post(
+            API_ENDPOINT,
+            json=request_data,
+            headers=headers,
+            timeout=300  # 5 minute timeout for batch operations
+        )
+        
+        elapsed_time = time.time() - start_time
+        
+        if response.status_code == 200:
+            results = response.json()
+            print(f"✅ Batch download completed in {elapsed_time:.2f} seconds\n")
+            print(f"📊 Received {len(results)} results from API\n")
+            return results
+        else:
+            print(f"❌ Batch download failed: {response.status_code}")
+            print(f"📝 Response: {response.text}")
+            # Try to parse as JSON for better error display
+            try:
+                error_data = response.json()
+                print(f"📋 Error details: {json.dumps(error_data, indent=2)}")
+            except:
+                pass
+            return []
+            
+    except requests.exceptions.Timeout:
+        print("⏰ Request timed out. The batch operation may still be processing.")
+        return []
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Request failed: {e}")
+        return []
+
+
+def print_results(results: List[dict]):
+    """Print download results in a formatted way"""
+    if not results:
+        print("⚠️  No results to display")
+        return
+    
+    print("=" * 80)
+    print("📊 DOWNLOAD RESULTS")
+    print("=" * 80)
+    
+    successful = 0
+    failed = 0
+    
+    for i, result in enumerate(results, 1):
+        status = result.get("status", "unknown")
+        # Try to get URL from result, or use the original URL from our list
+        url = result.get("url", FACEBOOK_URLS[i-1] if i <= len(FACEBOOK_URLS) else "N/A")
+        download_url = result.get("download_url", "")
+        content_type = result.get("content_type", "unknown")
+        session_id = result.get("session_id", "N/A")
+        
+        # Truncate URL for display
+        url_display = url[:70] + "..." if len(url) > 70 else url
+        print(f"\n[{i}/{len(results)}] {url_display}")
+        print(f"   Status: {status}")
+        print(f"   Content Type: {content_type}")
+        print(f"   Session ID: {session_id}")
+        
+        if status == "completed" and download_url:
+            print(f"   ✅ Download URL: {API_BASE_URL}{download_url}")
+            successful += 1
+        elif status == "failed":
+            error = result.get("error", result.get("message", "Unknown error"))
+            print(f"   ❌ Error: {error}")
+            failed += 1
+        else:
+            print(f"   ⚠️  Status: {status}")
+            failed += 1
+    
+    print("\n" + "=" * 80)
+    print(f"📈 SUMMARY: {successful} successful, {failed} failed out of {len(results)} total")
+    print("=" * 80)
+
+
+def main():
+    """Main function"""
+    print("🚀 Facebook Batch Video Downloader")
+    print("=" * 80)
+    
+    # Check API health
+    print(f"🔍 Checking API health at {API_BASE_URL}...")
+    if not check_api_health():
+        print(f"\n❌ API is not accessible at {API_BASE_URL}")
+        print("\n💡 Please make sure the backend is running:")
+        print("   cd app/api && ./start_api.sh")
+        print("   OR")
+        print("   cd app/api && uvicorn app.main:app --reload")
+        sys.exit(1)
+    
+    print("✅ API is running and accessible\n")
+    
+    # Download all videos
+    results = download_facebook_batch(FACEBOOK_URLS, quality="high")
+    
+    # Print results
+    if results:
+        print_results(results)
+    else:
+        print("\n⚠️  No results returned from the API")
+    
+    print("\n🎯 Batch download process completed!")
+
+
+if __name__ == "__main__":
+    main()
+
