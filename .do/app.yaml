@@ -1,99 +1,78 @@
 name: tiktok-downloader
+
+# Region - New York
+region: nyc
+
+# Backend Service
 services:
   - name: backend
-    dockerfile_path: app/api/Dockerfile
-    source_dir: .
     github:
+      repo: CLOVETHEDESTROYER/TikTokDownloader
       branch: main
       deploy_on_push: true
+    dockerfile_path: app/api/Dockerfile
+    http_port: 8001
+    instance_count: 1
+    instance_size_slug: basic-xxs
     health_check:
       http_path: /health
-      port: 8001
-    instance_count: 1
-    instance_size_slug: basic-s
+      initial_delay_seconds: 30
+      period_seconds: 10
     envs:
-      # Environment
-      - key: PORT
-        value: "8001"
       - key: ENV
-        value: "production"
+        value: production
       - key: DEBUG
         value: "false"
-
-      # Security Keys (as secrets)
+      - key: PORT
+        value: "8001"
+      - key: HOST
+        value: "0.0.0.0"
+      - key: PYTHONPATH
+        value: /app
+      - key: REQUIRE_API_KEY
+        value: "false"
+      - key: FRONTEND_URL
+        value: ${APP_URL}
       - key: API_SECRET_KEY
         type: SECRET
-        scope: RUN_TIME
-      - key: JWT_SECRET_KEY
-        type: SECRET
-        scope: RUN_TIME
+        value: REPLACE_WITH_YOUR_SECRET
       - key: WEBSITE_API_KEY
         type: SECRET
-        scope: RUN_TIME
+        value: REPLACE_WITH_YOUR_KEY
       - key: ADMIN_API_KEY
         type: SECRET
-        scope: RUN_TIME
-
-      # API Security
-      - key: API_KEY_HEADER_NAME
-        value: "X-API-Key"
-      - key: REQUIRE_API_KEY
-        value: "true"
-
-      # Download Settings
-      - key: DOWNLOAD_FOLDER
-        value: "/app/downloads"
-      - key: MAX_DOWNLOADS
-        value: "50"
-      - key: MAX_CONCURRENT_DOWNLOADS
-        value: "10"
-      - key: DOWNLOAD_EXPIRY_MINUTES
-        value: "60"
-      - key: VERIFY_SSL
-        value: "true"
-
-      # Rate Limiting
-      - key: RATE_LIMIT_PER_MINUTE
-        value: "60"
-
-      # CORS Settings
-      - key: ALLOWED_ORIGINS
-        value: "https://tiktokwatermarkremover.com,https://www.tiktokwatermarkremover.com"
-
-      # New environment variable
-      - key: DOWNLOAD_NO_WATERMARK
-        value: "true"
+        value: REPLACE_WITH_YOUR_ADMIN_KEY
+    routes:
+      - path: /api
+      - path: /health
+      - path: /downloads
 
   - name: frontend
-    dockerfile_path: app/web/Dockerfile
-    source_dir: .
     github:
+      repo: CLOVETHEDESTROYER/TikTokDownloader
       branch: main
       deploy_on_push: true
+    dockerfile_path: app/web/Dockerfile
+    http_port: 3000
     instance_count: 1
-    instance_size_slug: basic-xs
+    instance_size_slug: basic-xxs
+    build_command: npm run build
     envs:
       - key: NODE_ENV
-        value: "production"
+        value: production
+      - key: PORT
+        value: "3000"
       - key: NEXT_PUBLIC_API_URL
-        value: "${_self.HOSTNAME}/api/v1"
+        value: ${APP_URL}/api/v1
       - key: NEXT_PUBLIC_WEBSITE_API_KEY
-        scope: RUN_TIME
-        value: "${WEBSITE_API_KEY}"
+        type: SECRET
+        value: REPLACE_WITH_YOUR_KEY
+    routes:
+      - path: /
 
-routes:
-  - path: /api
-    service: backend
-    preserve_path_prefix: true
-  - path: /health
-    service: backend
-    preserve_path_prefix: false
-  - path: /docs
-    service: backend
-    preserve_path_prefix: false
-  - path: /openapi.json
-    service: backend
-    preserve_path_prefix: false
-  - path: /
-    service: frontend
-    preserve_path_prefix: false
+# Domain configuration (optional - add after initial deployment)
+# domains:
+#   - domain: tiktokwatermarkremover.com
+#     type: PRIMARY
+#   - domain: www.tiktokwatermarkremover.com
+#     type: ALIAS
