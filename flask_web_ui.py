@@ -220,17 +220,17 @@ with open('templates/index.html', 'w') as f:
             <p class="text-lg text-gray-700 dark:text-gray-300 mb-10 text-center">
                 Download TikTok videos without watermark, quickly and easily. Files are available for 5 minutes.
             </p>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
                         <div class="mb-4 p-4 rounded-lg {% if category == 'success' %}bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400{% else %}bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400{% endif %}">
                             {{ message }}
                         </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden p-6 mb-8">
                 <div class="space-y-6">
                     <!-- Single Video Download -->
@@ -248,8 +248,8 @@ with open('templates/index.html', 'w') as f:
                                 Download Video
                             </button>
                         </form>
-                    </div>
-
+            </div>
+            
                     <!-- Batch Download -->
                     <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
                         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Batch Download</h2>
@@ -265,10 +265,10 @@ with open('templates/index.html', 'w') as f:
                                 Start Batch Download
                             </button>
                         </form>
-                    </div>
                 </div>
             </div>
-
+        </div>
+        
             <!-- Active Downloads -->
             {% if active_downloads %}
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden p-6 mb-8">
@@ -280,7 +280,7 @@ with open('templates/index.html', 'w') as f:
                         <div class="flex justify-between items-center mb-2">
                             <h3 class="font-medium text-gray-900 dark:text-white">{{ download_item.type|capitalize }} Download</h3>
                             <span class="text-sm text-gray-500 dark:text-gray-400">{{ download_item.status|capitalize }}</span>
-                        </div>
+                            </div>
                         <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">{{ download_item.current_url }}</p>
                         <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                             <div class="bg-gradient-to-r from-teal-500 to-purple-500 h-2 rounded-full transition-all duration-500" style="width: {{ download_item.progress }}%"></div>
@@ -288,9 +288,9 @@ with open('templates/index.html', 'w') as f:
                     </div>
                     {% endif %}
                     {% endfor %}
+                    </div>
                 </div>
-            </div>
-            {% endif %}
+                {% endif %}
 
             <!-- Completed Downloads -->
             <div id="completed-downloads-section" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden p-6 {% if not completed_downloads %}hidden{% endif %}">
@@ -338,10 +338,10 @@ with open('templates/index.html', 'w') as f:
                 <p class="text-sm text-gray-600 dark:text-gray-400">
                     Made with ❤️ for TikTok content creators and fans
                 </p>
-            </div>
         </div>
+    </div>
     </footer>
-
+    
     <script>
         function hasActiveProcessingDownloads() {
             const activeDownloadsElement = document.querySelector('.bg-gray-50.dark\\\\:bg-gray-700');
@@ -357,8 +357,8 @@ with open('templates/index.html', 'w') as f:
         }
 
         if (hasActiveProcessingDownloads() || hasVisibleCompletedDownloads()) {
-            setTimeout(function() {
-                window.location.reload();
+        setTimeout(function() {
+            window.location.reload();
             }, 7000);
         }
 
