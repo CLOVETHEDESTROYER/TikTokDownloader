@@ -11,7 +11,7 @@ RUN npm install
 # Copy the Next.js configuration files
 COPY app/web/next.config.js ./
 COPY app/web/tsconfig.json ./
-COPY app/web/tailwind.config.ts ./
+COPY app/web/tailwind.config.js ./
 COPY app/web/postcss.config.mjs ./
 
 # Copy the source code
